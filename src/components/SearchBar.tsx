@@ -23,13 +23,13 @@ const SearchBar = ({ onSearch, placeholder = "搜索活动、地点或主办方.
   return (
     <form onSubmit={handleSubmit} className="relative min-w-0 flex-1">
       <div className="relative">
-        <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+        <Search className="absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-muted-foreground" />
         <Input
           type="text"
           placeholder={placeholder}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="h-14 rounded-2xl border-transparent bg-secondary/55 pl-12 pr-12 text-lg font-semibold placeholder:text-muted-foreground focus:bg-secondary/70"
+          className="h-12 rounded-2xl border-transparent bg-secondary/55 pl-11 pr-10 text-base font-semibold placeholder:text-muted-foreground focus:bg-secondary/70 sm:h-[52px]"
         />
         {query && (
           <button

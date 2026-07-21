@@ -26,18 +26,18 @@ const EventCard = ({ event, distance, onClick, isSaved, onToggleSaved, className
   return (
     <article
       className={[
-        'group overflow-hidden rounded-3xl border border-border/80 bg-card text-left shadow-card transition-smooth hover:-translate-y-0.5 hover:shadow-float',
+        'group overflow-hidden rounded-2xl border border-border/80 bg-card text-left shadow-card transition-smooth hover:-translate-y-0.5 hover:shadow-soft',
         className,
       ].filter(Boolean).join(' ')}
       onClick={onClick}
     >
-      <div className={['relative overflow-hidden', isTall ? 'h-[220px]' : 'h-[170px]'].join(' ')}>
+      <div className={['relative overflow-hidden', isTall ? 'h-[190px] sm:h-[220px]' : 'h-[150px] sm:h-[180px]'].join(' ')}>
         <img 
           src={event.coverImage} 
           alt={event.title}
           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
         />
-        <span className="absolute left-3 top-3 rounded-full bg-primary px-3 py-1 text-sm font-bold text-primary-foreground shadow-sm">
+        <span className="absolute left-2.5 top-2.5 rounded-full bg-primary px-2.5 py-1 text-xs font-bold text-primary-foreground shadow-sm sm:left-3 sm:top-3 sm:text-sm">
           {categoryLabel}
         </span>
         <button
@@ -48,28 +48,28 @@ const EventCard = ({ event, distance, onClick, isSaved, onToggleSaved, className
             onToggleSaved?.();
           }}
           className={[
-            'absolute right-3 top-3 grid h-11 w-11 place-items-center rounded-full backdrop-blur transition-colors',
+            'absolute right-2.5 top-2.5 grid h-9 w-9 place-items-center rounded-full backdrop-blur transition-colors sm:right-3 sm:top-3 sm:h-10 sm:w-10',
             isSaved ? 'bg-primary text-primary-foreground' : 'bg-foreground/45 text-white hover:bg-foreground/60',
           ].join(' ')}
         >
-          <Bookmark className="h-5 w-5" fill={isSaved ? 'currentColor' : 'none'} />
+          <Bookmark className="h-[18px] w-[18px] sm:h-5 sm:w-5" fill={isSaved ? 'currentColor' : 'none'} />
         </button>
       </div>
       
-      <div className="space-y-3 p-4">
+      <div className="space-y-2.5 p-3.5 sm:space-y-3 sm:p-4">
         <div className="space-y-1">
-          <h3 className="line-clamp-2 text-lg font-extrabold leading-snug text-foreground">{event.title}</h3>
-          <p className="line-clamp-2 text-[15px] font-semibold leading-relaxed text-muted-foreground">{event.description}</p>
+          <h3 className="line-clamp-2 text-base font-extrabold leading-snug text-foreground sm:text-lg">{event.title}</h3>
+          <p className="line-clamp-2 text-sm font-semibold leading-relaxed text-muted-foreground sm:text-[15px]">{event.description}</p>
         </div>
         
-        <div className="space-y-2 text-sm font-semibold text-muted-foreground">
+        <div className="space-y-1.5 text-xs font-semibold text-muted-foreground sm:space-y-2 sm:text-sm">
           <div className="flex items-center gap-2 text-primary">
             <Clock className="h-4 w-4" />
             <span>{event.dateLabel ?? event.date}, {event.time}</span>
           </div>
           <div className="flex items-end justify-between gap-2">
             <span className="truncate">{event.location.district}</span>
-            <strong className="shrink-0 text-base text-foreground">
+            <strong className="shrink-0 text-sm text-foreground sm:text-base">
               {event.ticket.isFree ? '免费' : `¥${event.ticket.price}`}
             </strong>
           </div>

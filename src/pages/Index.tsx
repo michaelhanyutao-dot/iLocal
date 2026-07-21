@@ -79,22 +79,22 @@ const Index = () => {
 
   return (
     <AppShell>
-      <main className="mx-auto min-h-screen w-full max-w-[390px] bg-background px-5 pb-10 pt-8">
-        <header className="space-y-5">
+      <main className="ilocal-page ilocal-page-padding min-h-screen pb-8 pt-6 sm:pb-10 sm:pt-8">
+        <header className="space-y-4 sm:space-y-5">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="grid h-14 w-14 place-items-center rounded-2xl bg-primary text-primary-foreground">
-                <Compass className="h-8 w-8" strokeWidth={2.3} />
+            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground sm:h-14 sm:w-14">
+                <Compass className="h-6 w-6 sm:h-8 sm:w-8" strokeWidth={2.3} />
               </div>
-              <div>
-                <h1 className="text-3xl font-black leading-none tracking-normal text-foreground">iLocal</h1>
-                <p className="mt-2 text-base font-semibold text-muted-foreground">发现身边正在发生的事</p>
+              <div className="min-w-0">
+                <h1 className="text-2xl font-black leading-none tracking-normal text-foreground sm:text-[28px]">iLocal</h1>
+                <p className="mt-1.5 truncate text-sm font-semibold text-muted-foreground sm:text-base">发现身边正在发生的事</p>
               </div>
             </div>
             <button
               type="button"
               onClick={() => setLanguage(language === 'zh' ? 'en' : 'zh')}
-              className="grid h-12 w-12 place-items-center rounded-full border border-border/80 bg-card text-lg font-bold text-muted-foreground"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-border/80 bg-card text-base font-bold text-muted-foreground sm:h-11 sm:w-11"
               aria-label="切换语言"
             >
               {language === 'zh' ? '中' : 'EN'}
@@ -105,10 +105,10 @@ const Index = () => {
             <SearchBar onSearch={setSearchQuery} placeholder="搜索活动、地点或主办方" />
             <button
               type="button"
-              className="grid h-14 w-16 shrink-0 place-items-center rounded-2xl bg-secondary/70 text-foreground"
+              className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-secondary/70 text-foreground sm:h-[52px] sm:w-14"
               aria-label="筛选"
             >
-              <SlidersHorizontal className="h-7 w-7" />
+              <SlidersHorizontal className="h-[22px] w-[22px] sm:h-6 sm:w-6" />
             </button>
           </div>
 
@@ -119,11 +119,11 @@ const Index = () => {
           />
         </header>
 
-        <section className="mt-8">
+        <section className="mt-6 sm:mt-8">
           {viewMode === 'map' ? (
             <div className="relative">
-              <Card className="overflow-hidden rounded-[28px] border-border/80 bg-card p-0">
-                <div className="h-[610px]">
+              <Card className="overflow-hidden rounded-2xl border-border/80 bg-card p-0 sm:rounded-3xl">
+                <div className="h-[calc(100svh-294px)] min-h-[430px] max-h-[600px] sm:h-[560px]">
                   <EventMap
                     events={filteredEvents}
                     userLocation={location}
@@ -137,7 +137,7 @@ const Index = () => {
                 size="icon"
                 onClick={handleLocationRequest}
                 disabled={locationLoading}
-                className="absolute right-4 top-4 h-14 w-14 rounded-full bg-card shadow-lg"
+                className="absolute right-3 top-3 h-11 w-11 rounded-full bg-card shadow-md sm:right-4 sm:top-4 sm:h-12 sm:w-12"
                 aria-label="当前位置"
               >
                 {locationError ? (
@@ -150,16 +150,16 @@ const Index = () => {
                 <button
                   type="button"
                   onClick={() => navigate(`/event/${selectedEvent.id}`)}
-                  className="absolute inset-x-4 bottom-5 flex items-center gap-3 rounded-3xl bg-card/95 p-3 text-left shadow-float backdrop-blur"
+                  className="absolute inset-x-3 bottom-4 flex items-center gap-3 rounded-2xl bg-card/95 p-3 text-left shadow-soft backdrop-blur sm:inset-x-4 sm:bottom-5"
                 >
                   <img
                     src={selectedEvent.coverImage}
                     alt={selectedEvent.title}
-                    className="h-16 w-16 rounded-2xl object-cover"
+                    className="h-14 w-14 rounded-xl object-cover sm:h-16 sm:w-16 sm:rounded-2xl"
                   />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-base font-black text-foreground">{selectedEvent.title}</span>
-                    <span className="mt-1 block truncate text-sm font-semibold text-muted-foreground">
+                    <span className="block truncate text-sm font-black text-foreground sm:text-base">{selectedEvent.title}</span>
+                    <span className="mt-1 block truncate text-xs font-semibold text-muted-foreground sm:text-sm">
                       {selectedEvent.location.district} · {selectedEvent.ticket.isFree ? '免费' : `¥${selectedEvent.ticket.price}`}
                     </span>
                   </span>
@@ -168,7 +168,7 @@ const Index = () => {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-2 items-start gap-4">
+            <div className="grid grid-cols-2 items-start gap-3 sm:grid-cols-3 sm:gap-4">
               {filteredEvents.map((event) => (
                 <EventCard
                   key={event.id}

@@ -139,6 +139,41 @@ All colors MUST be HSL.
 }
 
 @layer utilities {
+  .ilocal-page {
+    width: 100%;
+    max-width: min(100vw, 430px);
+    margin-inline: auto;
+    background: hsl(var(--background));
+  }
+
+  .ilocal-page-padding {
+    padding-inline: clamp(1rem, 4.2vw, 1.25rem);
+  }
+
+  .ilocal-bottom-inner {
+    width: 100%;
+    max-width: min(100vw, 430px);
+    margin-inline: auto;
+  }
+
+  @media (min-width: 640px) {
+    .ilocal-page,
+    .ilocal-bottom-inner {
+      max-width: min(92vw, 620px);
+    }
+
+    .ilocal-page-padding {
+      padding-inline: 1.5rem;
+    }
+  }
+
+  @media (min-width: 900px) {
+    .ilocal-page,
+    .ilocal-bottom-inner {
+      max-width: min(86vw, 760px);
+    }
+  }
+
   /* Hide scrollbars while maintaining scroll functionality */
   .scrollbar-hide {
     -ms-overflow-style: none; /* IE and Edge */

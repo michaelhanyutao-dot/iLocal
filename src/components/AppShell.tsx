@@ -14,10 +14,10 @@ const navItems = [
 
 const AppShell = ({ children }: AppShellProps) => {
   return (
-    <div className="min-h-screen bg-background pb-24 text-foreground">
+    <div className="min-h-screen bg-background pb-20 text-foreground sm:pb-24">
       {children}
       <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border/70 bg-card/95 backdrop-blur-xl">
-        <div className="mx-auto grid h-[74px] w-full max-w-[390px] grid-cols-3 px-8">
+        <div className="ilocal-bottom-inner grid h-[68px] grid-cols-3 px-6 sm:h-[74px] sm:px-10">
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -27,7 +27,7 @@ const AppShell = ({ children }: AppShellProps) => {
                 end={item.to === '/'}
                 className={({ isActive }) =>
                   [
-                    'flex flex-col items-center justify-center gap-1 text-[13px] font-semibold transition-colors',
+                    'flex flex-col items-center justify-center gap-0.5 text-xs font-semibold transition-colors sm:gap-1 sm:text-[13px]',
                     isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
                   ].join(' ')
                 }
@@ -36,11 +36,11 @@ const AppShell = ({ children }: AppShellProps) => {
                   <>
                     <span
                       className={[
-                        'grid h-8 w-8 place-items-center rounded-xl border transition-colors',
+                        'grid h-7 w-7 place-items-center rounded-lg border transition-colors sm:h-8 sm:w-8 sm:rounded-xl',
                         isActive ? 'border-primary/40 bg-primary/10' : 'border-transparent',
                       ].join(' ')}
                     >
-                      <Icon className="h-6 w-6" strokeWidth={2.4} />
+                      <Icon className="h-5 w-5 sm:h-6 sm:w-6" strokeWidth={2.4} />
                     </span>
                     {item.label}
                   </>
