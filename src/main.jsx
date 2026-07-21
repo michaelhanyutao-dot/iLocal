@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import {
   Calendar,
   Check,
+  Clock,
   ClipboardList,
   Database,
   Heart,
@@ -10,6 +11,7 @@ import {
   List,
   LocateFixed,
   Map,
+  MapPin,
   Navigation,
   Search,
   Send,
@@ -18,6 +20,7 @@ import {
   Upload,
   UserPlus,
   UserRound,
+  X,
 } from "lucide-react";
 import { categories, descFor, districtFor, labelFor, priceFor } from "./lib/categories";
 import { getAdminContent, getExploreItems, bulkInsert, track } from "./lib/data";
@@ -102,6 +105,7 @@ function Explore({ items, saved, onSave, lang }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
   const [view, setView] = useState("map");
+  const [detailItem, setDetailItem] = useState(null);
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return items
@@ -141,7 +145,11 @@ function Explore({ items, saved, onSave, lang }) {
         </strong>
       </div>
       <div className="content-zone">
-        {view === "map" ? <MapPanel items={filtered} lang={lang} saved={saved} onSave={onSave} /> : <Masonry items={filtered} lang={lang} saved={saved} onSave={onSave} />}
+        {view === "map" ? (
+          <MapPanel items={filtered} lang={lang} saved={saved} onSave={onSave} onOpen={setDetailItem} />
+        ) : (
+          <Masonry items={filtered} lang={lang} saved={saved} onSave={onSave} onOpen={setDetailItem} />
+        )}
         <div className="segmented floating-toggle">
           <button className={view === "map" ? "active" : ""} onClick={() => setView("map")}>
             <Map size={16} /> {t(lang, "map")}
@@ -151,11 +159,20 @@ function Explore({ items, saved, onSave, lang }) {
           </button>
         </div>
       </div>
+      {detailItem && (
+        <DetailSheet
+          item={detailItem}
+          lang={lang}
+          saved={saved.has(detailItem.id)}
+          onSave={() => onSave(detailItem)}
+          onClose={() => setDetailItem(null)}
+        />
+      )}
     </section>
   );
 }
 
-function MapPanel({ items, lang, saved, onSave }) {
+function MapPanel({ items, lang, saved, onSave, onOpen }) {
   const [selected, setSelected] = useState(items[0] || null);
   useEffect(() => setSelected(items[0] || null), [items]);
   return (
@@ -172,38 +189,38 @@ function MapPanel({ items, lang, saved, onSave }) {
           />
         ))}
       </div>
-      {selected && <PreviewCard item={selected} lang={lang} saved={saved.has(selected.id)} onSave={() => onSave(selected)} />}
+      {selected && <PreviewCard item={selected} lang={lang} saved={saved.has(selected.id)} onSave={() => onSave(selected)} onOpen={() => onOpen(selected)} />}
     </div>
   );
 }
 
-function PreviewCard({ item, lang, saved, onSave }) {
+function PreviewCard({ item, lang, saved, onSave, onOpen }) {
   return (
-    <article className="preview-card">
+    <article className="preview-card" onClick={onOpen}>
       <img src={item.image_url} alt={labelFor(item, lang)} />
       <div>
         <span className="eyebrow">{item.content_kind === "event" ? t(lang, "event") : t(lang, "venue")}</span>
         <h3>{labelFor(item, lang)}</h3>
         <p>{districtFor(item)} · {priceFor(item, lang)}</p>
       </div>
-      <button className={saved ? "round active" : "round"} onClick={onSave} title={t(lang, "save")}>
+      <button className={saved ? "round active" : "round"} onClick={(event) => { event.stopPropagation(); onSave(); }} title={t(lang, "save")}>
         <Check size={17} />
       </button>
-      <a className="round" href={navUrl(item)} target="_blank" rel="noreferrer" title="Navigate">
+      <a className="round" href={navUrl(item)} target="_blank" rel="noreferrer" title="Navigate" onClick={(event) => event.stopPropagation()}>
         <Navigation size={17} />
       </a>
     </article>
   );
 }
 
-function Masonry({ items, lang, saved, onSave }) {
+function Masonry({ items, lang, saved, onSave, onOpen = () => {} }) {
   if (!items.length) return <p className="empty">{t(lang, "noResults")}</p>;
   return (
     <div className="masonry">
       {items.map((item) => (
-        <article className="card" key={item.id}>
+        <article className="card" key={item.id} onClick={() => onOpen(item)}>
           <img src={item.image_url} alt={labelFor(item, lang)} />
-          <button className={saved.has(item.id) ? "save-button active" : "save-button"} onClick={() => onSave(item)}>
+          <button className={saved.has(item.id) ? "save-button active" : "save-button"} onClick={(event) => { event.stopPropagation(); onSave(item); }}>
             <Heart size={15} fill={saved.has(item.id) ? "currentColor" : "none"} />
           </button>
           <div className="card-body">
@@ -219,6 +236,45 @@ function Masonry({ items, lang, saved, onSave }) {
           </div>
         </article>
       ))}
+    </div>
+  );
+}
+
+function DetailSheet({ item, lang, saved, onSave, onClose }) {
+  const title = labelFor(item, lang);
+  return (
+    <div className="sheet-backdrop" onClick={onClose}>
+      <article className="detail-sheet" onClick={(event) => event.stopPropagation()}>
+        <button className="sheet-close" onClick={onClose} aria-label="Close">
+          <X size={18} />
+        </button>
+        <img src={item.image_url} alt={title} />
+        <div className="detail-body">
+          <span className="eyebrow">{item.content_kind === "event" ? t(lang, "event") : t(lang, "venue")}</span>
+          <h2>{title}</h2>
+          <p>{descFor(item, lang)}</p>
+          <div className="detail-facts">
+            {item.starts_at && <span><Clock size={14} /> {localDateTime(item.starts_at, lang)}</span>}
+            <span><MapPin size={14} /> {districtFor(item)}</span>
+            <span><Database size={14} /> {priceFor(item, lang)}</span>
+          </div>
+          <div className="tags">{(item.tags || []).slice(0, 5).map((tag) => <span key={tag}>{tag}</span>)}</div>
+          <div className="detail-actions">
+            <button onClick={onSave} className={saved ? "active" : ""}>
+              <Heart size={17} fill={saved ? "currentColor" : "none"} />
+              {saved ? t(lang, "savedStatus") : t(lang, "save")}
+            </button>
+            <button>
+              <Calendar size={17} />
+              {t(lang, "plan")}
+            </button>
+            <a href={navUrl(item)} target="_blank" rel="noreferrer">
+              <Navigation size={17} />
+              {t(lang, "currentLocation")}
+            </a>
+          </div>
+        </div>
+      </article>
     </div>
   );
 }
