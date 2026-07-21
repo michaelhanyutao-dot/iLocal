@@ -1,0 +1,76 @@
+export const messages = {
+  zh: {
+    explore: "发现",
+    saved: "收藏",
+    admin: "后台",
+    profile: "我的",
+    tagline: "发现身边精彩活动",
+    search: "搜索活动、地点或商圈",
+    map: "地图",
+    list: "列表",
+    currentLocation: "当前位置",
+    found: "发现",
+    items: "个活动",
+    free: "免费",
+    save: "收藏",
+    savedStatus: "已收藏",
+    want: "想去",
+    plan: "安排",
+    visited: "去过",
+    import: "批量导入",
+    pasteJson: "粘贴 JSON 或 CSV",
+    preview: "预览",
+    publish: "写入数据库",
+    demoMode: "当前为本地演示数据，填写 Supabase key 后连接真实数据库。",
+    noResults: "没有找到匹配内容",
+    venue: "地点",
+    event: "活动",
+    tonight: "今晚",
+    weekend: "周末",
+    all: "全部",
+  },
+  en: {
+    explore: "Explore",
+    saved: "Saved",
+    admin: "Admin",
+    profile: "Profile",
+    tagline: "Discover local things to do",
+    search: "Search events, places, or areas",
+    map: "Map",
+    list: "List",
+    currentLocation: "Current location",
+    found: "Found",
+    items: "items",
+    free: "Free",
+    save: "Save",
+    savedStatus: "Saved",
+    want: "Want",
+    plan: "Plan",
+    visited: "Visited",
+    import: "Bulk import",
+    pasteJson: "Paste JSON or CSV",
+    preview: "Preview",
+    publish: "Write to database",
+    demoMode: "Using local demo data. Add Supabase keys to connect the live database.",
+    noResults: "No matching results",
+    venue: "Place",
+    event: "Event",
+    tonight: "Tonight",
+    weekend: "Weekend",
+    all: "All",
+  },
+};
+
+export function t(lang, key) {
+  return messages[lang]?.[key] || messages.zh[key] || key;
+}
+
+export function localDateTime(value, lang) {
+  if (!value) return "";
+  return new Intl.DateTimeFormat(lang === "en" ? "en-US" : "zh-CN", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
