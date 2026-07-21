@@ -55,25 +55,25 @@ const Saved = () => {
 
   return (
     <AppShell>
-      <main className="ilocal-page ilocal-page-padding min-h-screen pb-8 pt-8 sm:pb-10 sm:pt-10">
-        <h1 className="text-3xl font-black tracking-normal text-foreground sm:text-4xl">我的收藏</h1>
+      <main className="ilocal-page ilocal-page-padding min-h-screen pb-8 pt-7 sm:pb-10 sm:pt-8">
+        <h1 className="text-3xl font-black tracking-normal text-foreground sm:text-[32px]">我的收藏</h1>
 
-        <section className="mt-6 space-y-5 sm:mt-8 sm:space-y-6">
-          <div className="grid grid-cols-2 rounded-2xl bg-secondary/70 p-1.5 sm:rounded-3xl">
-            <ModeButton active={view === 'list'} onClick={() => setView('list')} icon={<List className="h-6 w-6" />} label="列表" />
-            <ModeButton active={view === 'calendar'} onClick={() => setView('calendar')} icon={<Calendar className="h-6 w-6" />} label="日历" />
+        <section className="mt-6 space-y-5">
+          <div className="grid grid-cols-2 rounded-2xl bg-secondary/70 p-1.5">
+            <ModeButton active={view === 'list'} onClick={() => setView('list')} icon={<List className="h-5 w-5" />} label="列表" />
+            <ModeButton active={view === 'calendar'} onClick={() => setView('calendar')} icon={<Calendar className="h-5 w-5" />} label="日历" />
           </div>
 
           {view === 'list' ? (
             <>
-              <div className="grid grid-cols-4 gap-2.5 sm:gap-3">
+              <div className="grid grid-cols-[repeat(4,minmax(0,1fr))] gap-2.5 sm:gap-3">
                 {filters.map((item) => (
                   <button
                     key={item.key}
                     type="button"
                     onClick={() => setFilter(item.key)}
                     className={[
-                      'h-12 rounded-2xl text-sm font-black transition-colors sm:h-14 sm:text-base',
+                      'h-11 rounded-2xl text-sm font-black transition-colors sm:h-12',
                       filter === item.key ? 'bg-primary text-primary-foreground' : 'bg-secondary/65 text-muted-foreground',
                     ].join(' ')}
                   >
@@ -101,21 +101,21 @@ const Saved = () => {
             </>
           ) : (
             <section className="space-y-6">
-              <div className="grid grid-cols-2 rounded-2xl bg-secondary/70 p-1.5 sm:rounded-3xl">
+              <div className="grid grid-cols-2 rounded-2xl bg-secondary/70 p-1.5">
                 <ModeButton active={calendarMode === 'month'} onClick={() => setCalendarMode('month')} label="月历" />
                 <ModeButton active={calendarMode === 'agenda'} onClick={() => setCalendarMode('agenda')} label="日程" />
               </div>
 
-              <Card className="rounded-2xl border-border/80 bg-card p-4 shadow-none sm:rounded-3xl sm:p-5">
-                <div className="mb-5 flex items-center justify-between text-muted-foreground sm:mb-6">
-                  <button type="button" className="text-2xl font-black sm:text-3xl" aria-label="上个月">‹</button>
-                  <h2 className="text-xl font-black text-foreground sm:text-2xl">Jul 2026</h2>
-                  <button type="button" className="text-2xl font-black sm:text-3xl" aria-label="下个月">›</button>
+              <Card className="rounded-2xl border-border/80 bg-card p-4 shadow-none sm:p-5">
+                <div className="mb-5 flex items-center justify-between text-muted-foreground">
+                  <button type="button" className="text-2xl font-black" aria-label="上个月">‹</button>
+                  <h2 className="text-xl font-black text-foreground sm:text-[22px]">Jul 2026</h2>
+                  <button type="button" className="text-2xl font-black" aria-label="下个月">›</button>
                 </div>
 
-                <div className="grid grid-cols-7 gap-y-3 text-center sm:gap-y-4">
+                <div className="grid grid-cols-7 gap-y-3 text-center sm:gap-y-3.5">
                   {['一', '二', '三', '四', '五', '六', '日'].map((day) => (
-                    <div key={day} className="text-sm font-black text-muted-foreground sm:text-base">{day}</div>
+                    <div key={day} className="text-sm font-black text-muted-foreground">{day}</div>
                   ))}
                   {calendarCells.map((cell, index) => {
                     const hasEvent = !cell.outside && eventDays.has(cell.day);
@@ -125,7 +125,7 @@ const Saved = () => {
                         key={`${cell.day}-${index}`}
                         type="button"
                         className={[
-                          'relative mx-auto grid h-10 w-10 place-items-center rounded-xl text-base font-bold sm:h-12 sm:w-12 sm:rounded-2xl sm:text-lg',
+                          'relative mx-auto grid h-10 w-10 place-items-center rounded-xl text-base font-bold sm:h-11 sm:w-11',
                           cell.outside ? 'text-muted-foreground/35' : 'text-foreground',
                           isToday ? 'border-2 border-primary bg-secondary/50 text-primary' : '',
                         ].join(' ')}
@@ -137,7 +137,7 @@ const Saved = () => {
                   })}
                 </div>
 
-                <Button variant="outline" className="mt-5 h-11 w-full rounded-2xl text-sm font-black text-primary sm:mt-6 sm:h-12 sm:text-base">
+                <Button variant="outline" className="mt-5 h-11 w-full rounded-2xl text-sm font-black text-primary sm:h-12">
                   回到今天
                 </Button>
               </Card>
@@ -155,7 +155,7 @@ const Saved = () => {
                       className="w-full rounded-2xl border border-border/80 bg-card p-4 text-left shadow-card"
                     >
                       <div className="flex items-start gap-3">
-                        <img src={event.coverImage} alt={event.title} className="h-14 w-14 rounded-xl object-cover sm:h-16 sm:w-16 sm:rounded-2xl" />
+                        <img src={event.coverImage} alt={event.title} className="h-14 w-14 rounded-xl object-cover sm:h-[60px] sm:w-[60px]" />
                         <div className="min-w-0 flex-1">
                           <h3 className="truncate text-base font-black text-foreground sm:text-lg">{event.title}</h3>
                           <p className="mt-1 flex items-center gap-1 text-sm font-semibold text-muted-foreground">
@@ -192,7 +192,7 @@ const ModeButton = ({ active, onClick, icon, label }: ModeButtonProps) => (
     type="button"
     onClick={onClick}
     className={[
-      'flex h-12 items-center justify-center gap-2 rounded-xl text-base font-black transition-colors sm:h-14 sm:rounded-2xl sm:text-lg',
+      'flex h-12 items-center justify-center gap-2 rounded-xl text-base font-black transition-colors sm:h-[52px]',
       active ? 'bg-card text-foreground shadow-card ring-2 ring-primary/30' : 'text-muted-foreground',
     ].join(' ')}
   >
@@ -202,12 +202,12 @@ const ModeButton = ({ active, onClick, icon, label }: ModeButtonProps) => (
 );
 
 const EmptySaved = ({ onDiscover }: { onDiscover: () => void }) => (
-  <div className="grid min-h-[460px] place-items-center text-center sm:min-h-[520px]">
+  <div className="grid min-h-[440px] place-items-center text-center sm:min-h-[480px]">
     <div className="space-y-4">
-      <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-secondary/70 text-primary sm:h-20 sm:w-20">
-        <Bookmark className="h-8 w-8 sm:h-10 sm:w-10" />
+      <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-secondary/70 text-primary sm:h-[72px] sm:w-[72px]">
+        <Bookmark className="h-8 w-8 sm:h-9 sm:w-9" />
       </div>
-      <div className="space-y-2 text-lg font-black text-muted-foreground sm:text-xl">
+      <div className="space-y-2 text-lg font-black text-muted-foreground">
         <p>还没有收藏</p>
         <button type="button" onClick={onDiscover} className="underline underline-offset-4">
           去发现

@@ -1,207 +1,112 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Settings, LogOut, Calendar, Users, Edit } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { mockEvents } from '@/data/mockEvents';
-import EventCard from '@/components/EventCard';
-import { useToast } from '@/hooks/use-toast';
+import type { ReactNode } from 'react';
+import { CalendarClock, ChevronRight, LogOut, Settings, ShieldCheck, UserRound } from 'lucide-react';
 import AppShell from '@/components/AppShell';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 const Profile = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin, isModerator } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Mock user data
-  const userCreatedEvents = mockEvents.slice(0, 2);
-  const userAttendingEvents = mockEvents.slice(2, 4);
+  const email = user?.email ?? 'michaelhan6666@gmail.com';
+  const displayName = user?.email?.split('@')[0] || 'Michael Han';
+  const initial = displayName.slice(0, 1).toUpperCase();
 
   const handleSignOut = async () => {
     try {
       await signOut();
-      toast({
-        title: "已退出登录",
-        description: "感谢使用活动发现！"
-      });
+      toast({ title: '已退出登录' });
       navigate('/');
-    } catch (error) {
+    } catch {
       toast({
-        title: "退出失败",
-        description: "请稍后再试",
-        variant: "destructive"
+        title: '退出失败',
+        description: '请稍后再试',
+        variant: 'destructive',
       });
     }
   };
 
-  const getUserInitials = (email: string) => {
-    return email?.split('@')[0]?.slice(0, 2)?.toUpperCase() || 'U';
-  };
-
   return (
     <AppShell>
-    <div className="min-h-screen bg-gradient-background pb-6">
-      {/* Header */}
-      <div className="sticky top-0 z-50 bg-card/90 backdrop-blur-lg border-b border-border/50">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/')}
-              className="text-foreground"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              返回首页
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleSignOut}
-              className="text-foreground"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              退出登录
-            </Button>
+      <main className="ilocal-page ilocal-page-padding min-h-screen pb-8 pt-8 sm:pt-10">
+        <section className="flex items-center gap-4">
+          <div className="grid h-20 w-20 shrink-0 place-items-center rounded-full bg-foreground text-3xl font-black text-background sm:h-[88px] sm:w-[88px]">
+            {initial}
           </div>
-        </div>
-      </div>
-
-      <div className="container mx-auto px-4 py-6 max-w-4xl">
-        {/* Profile Header */}
-        <Card className="p-6 mb-6 bg-gradient-card border-border/50">
-          <div className="flex flex-col md:flex-row md:items-center gap-6">
-            <Avatar className="w-24 h-24 mx-auto md:mx-0">
-              <AvatarImage src="" />
-              <AvatarFallback className="text-2xl">
-                {getUserInitials(user?.email || '')}
-              </AvatarFallback>
-            </Avatar>
-            
-            <div className="text-center md:text-left flex-1">
-              <h1 className="text-2xl font-bold text-foreground mb-2">
-                {user?.email?.split('@')[0] || '用户'}
-              </h1>
-              <p className="text-muted-foreground mb-4">
-                {user?.email}
-              </p>
-              <div className="flex flex-wrap gap-4 justify-center md:justify-start text-sm">
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-primary" />
-                  <span>创建了 {userCreatedEvents.length} 个活动</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-primary" />
-                  <span>参与了 {userAttendingEvents.length} 个活动</span>
-                </div>
-              </div>
-            </div>
-
-            <Button variant="outline" className="md:self-start">
-              <Edit className="w-4 h-4 mr-2" />
-              编辑资料
-            </Button>
+          <div className="min-w-0">
+            <h1 className="truncate text-2xl font-black text-foreground sm:text-[28px]">{displayName}</h1>
+            <p className="mt-1 truncate text-sm font-semibold text-muted-foreground sm:text-base">{email}</p>
           </div>
-        </Card>
+        </section>
 
-        {/* Activity Tabs */}
-        <Tabs defaultValue="created" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="created">我创建的活动</TabsTrigger>
-            <TabsTrigger value="attending">我参与的活动</TabsTrigger>
-          </TabsList>
+        <section className="mt-8 space-y-3">
+          <div className="flex items-center gap-2 text-base font-black text-foreground">
+            <CalendarClock className="h-5 w-5 text-muted-foreground" />
+            最近推荐
+          </div>
+          <p className="text-base font-semibold text-muted-foreground">还没有推荐记录。</p>
+        </section>
 
-          {/* Created Events */}
-          <TabsContent value="created">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-foreground">
-                  我创建的活动 ({userCreatedEvents.length})
-                </h2>
-                <Button onClick={() => navigate('/create-event')}>
-                  创建新活动
-                </Button>
-              </div>
-              
-              {userCreatedEvents.length === 0 ? (
-                <Card className="p-8 text-center bg-gradient-card border-border/50">
-                  <div className="text-muted-foreground">
-                    <Calendar className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
-                    <p className="text-lg mb-2">还没有创建过活动</p>
-                    <p className="text-sm mb-4">创建你的第一个活动，与更多人分享精彩体验</p>
-                    <Button onClick={() => navigate('/create-event')}>
-                      创建活动
-                    </Button>
-                  </div>
-                </Card>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {userCreatedEvents.map((event) => (
-                    <div key={event.id} className="relative">
-                      <EventCard
-                        event={event}
-                        distance="1.2km"
-                        duration="15分钟"
-                        onClick={() => navigate(`/event/${event.id}`)}
-                      />
-                      <div className="absolute top-2 right-2">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          className="h-8 px-2 text-xs"
-                        >
-                          <Settings className="w-3 h-3 mr-1" />
-                          管理
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </TabsContent>
+        <section className="mt-7 space-y-4">
+          <ProfileRow
+            icon={<Settings className="h-5 w-5" />}
+            label="收藏与到访"
+            onClick={() => navigate('/saved')}
+          />
+          {(isAdmin || isModerator) && (
+            <ProfileRow
+              icon={<ShieldCheck className="h-5 w-5" />}
+              label="活动后台"
+              onClick={() => navigate('/admin')}
+            />
+          )}
+          {!user && (
+            <ProfileRow
+              icon={<UserRound className="h-5 w-5" />}
+              label="登录 / 注册"
+              onClick={() => navigate('/auth')}
+            />
+          )}
+        </section>
 
-          {/* Attending Events */}
-          <TabsContent value="attending">
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-foreground">
-                我参与的活动 ({userAttendingEvents.length})
-              </h2>
-              
-              {userAttendingEvents.length === 0 ? (
-                <Card className="p-8 text-center bg-gradient-card border-border/50">
-                  <div className="text-muted-foreground">
-                    <Users className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
-                    <p className="text-lg mb-2">还没有参与过活动</p>
-                    <p className="text-sm mb-4">去发现页面找找感兴趣的活动吧</p>
-                    <Button onClick={() => navigate('/')}>
-                      发现活动
-                    </Button>
-                  </div>
-                </Card>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {userAttendingEvents.map((event) => (
-                    <EventCard
-                      key={event.id}
-                      event={event}
-                      distance="1.2km"
-                      duration="15分钟"
-                      onClick={() => navigate(`/event/${event.id}`)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </div>
+        {user && (
+          <Button
+            variant="outline"
+            onClick={handleSignOut}
+            className="mt-8 h-14 w-full rounded-2xl text-base font-black text-muted-foreground"
+          >
+            <LogOut className="mr-2 h-5 w-5" />
+            退出登录
+          </Button>
+        )}
+      </main>
     </AppShell>
   );
 };
+
+const ProfileRow = ({
+  icon,
+  label,
+  onClick,
+}: {
+  icon: ReactNode;
+  label: string;
+  onClick: () => void;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="flex h-16 w-full items-center justify-between rounded-2xl border border-border/70 bg-card px-5 text-left text-base font-black text-muted-foreground"
+  >
+    <span className="flex items-center gap-4">
+      {icon}
+      {label}
+    </span>
+    <ChevronRight className="h-5 w-5" />
+  </button>
+);
 
 export default Profile;

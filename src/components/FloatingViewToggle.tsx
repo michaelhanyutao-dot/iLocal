@@ -16,7 +16,7 @@ const FloatingViewToggle = ({ viewMode, onViewModeChange }: FloatingViewTogglePr
   ];
 
   return (
-    <div className="fixed bottom-[78px] left-1/2 z-40 -translate-x-1/2 sm:bottom-[88px]">
+    <div className="fixed bottom-[78px] left-1/2 z-40 -translate-x-1/2 sm:bottom-[82px]">
       <div className="flex gap-1 rounded-full border border-border/80 bg-card/95 p-1 shadow-soft backdrop-blur-xl">
         {viewModes.map((mode) => {
           const isSelected = viewMode === mode.key;
@@ -27,13 +27,13 @@ const FloatingViewToggle = ({ viewMode, onViewModeChange }: FloatingViewTogglePr
               variant="ghost"
               size="sm"
               onClick={() => onViewModeChange(mode.key)}
-              className={`h-10 rounded-full px-4 text-sm font-bold transition-smooth sm:h-11 sm:px-5 sm:text-base ${
+              className={`h-10 rounded-full px-4 text-sm font-bold transition-smooth sm:h-[42px] sm:px-5 ${
                 isSelected 
                   ? 'bg-primary text-primary-foreground shadow-md' 
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
               }`}
             >
-              <Icon className="mr-1.5 h-[18px] w-[18px] sm:mr-2 sm:h-5 sm:w-5" />
+              <Icon className="mr-1.5 h-[18px] w-[18px] sm:mr-2 sm:h-[19px] sm:w-[19px]" />
               {mode.label}
             </Button>
           );

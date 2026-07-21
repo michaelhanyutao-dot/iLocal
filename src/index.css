@@ -147,7 +147,7 @@ All colors MUST be HSL.
   }
 
   .ilocal-page-padding {
-    padding-inline: clamp(1rem, 4.2vw, 1.25rem);
+    padding-inline: clamp(1rem, 4vw, 1.25rem);
   }
 
   .ilocal-bottom-inner {
@@ -159,18 +159,18 @@ All colors MUST be HSL.
   @media (min-width: 640px) {
     .ilocal-page,
     .ilocal-bottom-inner {
-      max-width: min(92vw, 620px);
+      max-width: min(88vw, 500px);
     }
 
     .ilocal-page-padding {
-      padding-inline: 1.5rem;
+      padding-inline: 1.35rem;
     }
   }
 
   @media (min-width: 900px) {
     .ilocal-page,
     .ilocal-bottom-inner {
-      max-width: min(86vw, 760px);
+      max-width: min(78vw, 560px);
     }
   }
 

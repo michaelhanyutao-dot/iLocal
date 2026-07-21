@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, Compass, LocateFixed, Send, SlidersHorizontal } from 'lucide-react';
+import { AlertCircle, Compass, LocateFixed, Send } from 'lucide-react';
 import AppShell from '@/components/AppShell';
 import EventCard from '@/components/EventCard';
 import EventMap from '@/components/EventMap';
@@ -87,36 +87,29 @@ const Index = () => {
   return (
     <AppShell>
       <main className="ilocal-page ilocal-page-padding min-h-screen pb-8 pt-6 sm:pb-10 sm:pt-8">
-        <header className="space-y-4 sm:space-y-5">
+        <header className="space-y-4">
           <div className="flex items-center justify-between">
-            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground sm:h-14 sm:w-14">
-                <Compass className="h-6 w-6 sm:h-8 sm:w-8" strokeWidth={2.3} />
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground sm:h-[52px] sm:w-[52px]">
+                <Compass className="h-6 w-6 sm:h-7 sm:w-7" strokeWidth={2.3} />
               </div>
               <div className="min-w-0">
-                <h1 className="text-2xl font-black leading-none tracking-normal text-foreground sm:text-[28px]">iLocal</h1>
-                <p className="mt-1.5 truncate text-sm font-semibold text-muted-foreground sm:text-base">发现身边正在发生的事</p>
+                <h1 className="text-2xl font-black leading-none tracking-normal text-foreground sm:text-[26px]">iLocal</h1>
+                <p className="mt-1.5 truncate text-sm font-semibold text-muted-foreground">发现身边正在发生的事</p>
               </div>
             </div>
             <button
               type="button"
               onClick={() => setLanguage(language === 'zh' ? 'en' : 'zh')}
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-border/80 bg-card text-base font-bold text-muted-foreground sm:h-11 sm:w-11"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-border/80 bg-card text-sm font-bold text-muted-foreground sm:h-11 sm:w-11 sm:text-base"
               aria-label="切换语言"
             >
               {language === 'zh' ? '中' : 'EN'}
             </button>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex">
             <SearchBar onSearch={setSearchQuery} placeholder="搜索活动、地点或主办方" />
-            <button
-              type="button"
-              className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-secondary/70 text-foreground sm:h-[52px] sm:w-14"
-              aria-label="筛选"
-            >
-              <SlidersHorizontal className="h-[22px] w-[22px] sm:h-6 sm:w-6" />
-            </button>
           </div>
 
           <FilterBar
@@ -132,11 +125,11 @@ const Index = () => {
           )}
         </header>
 
-        <section className="mt-6 sm:mt-8">
+        <section className="mt-5 sm:mt-6">
           {viewMode === 'map' ? (
             <div className="relative">
-              <Card className="overflow-hidden rounded-2xl border-border/80 bg-card p-0 sm:rounded-3xl">
-                <div className="h-[calc(100svh-294px)] min-h-[430px] max-h-[600px] sm:h-[560px]">
+              <Card className="overflow-hidden rounded-2xl border-border/80 bg-card p-0">
+                <div className="h-[calc(100svh-286px)] min-h-[400px] max-h-[560px] sm:h-[520px]">
                   <EventMap
                     events={filteredEvents}
                     userLocation={location}
@@ -155,7 +148,7 @@ const Index = () => {
                 size="icon"
                 onClick={handleLocationRequest}
                 disabled={locationLoading}
-                className="absolute right-3 top-3 h-11 w-11 rounded-full bg-card shadow-md sm:right-4 sm:top-4 sm:h-12 sm:w-12"
+                className="absolute right-3 top-3 h-11 w-11 rounded-full bg-card shadow-md sm:right-4 sm:top-4"
                 aria-label="当前位置"
               >
                 {locationError ? (
@@ -173,7 +166,7 @@ const Index = () => {
                   <img
                     src={selectedEvent.coverImage}
                     alt={selectedEvent.title}
-                    className="h-14 w-14 rounded-xl object-cover sm:h-16 sm:w-16 sm:rounded-2xl"
+                    className="h-14 w-14 rounded-xl object-cover sm:h-[60px] sm:w-[60px]"
                   />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-black text-foreground sm:text-base">{selectedEvent.title}</span>

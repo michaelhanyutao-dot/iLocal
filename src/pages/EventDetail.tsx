@@ -100,33 +100,33 @@ const EventDetail = () => {
 
   return (
     <AppShell>
-      <main className="ilocal-page min-h-screen bg-background pb-24 sm:pb-28">
+      <main className="ilocal-page min-h-screen bg-background pb-24">
         <section className="relative">
           <img
             src={event.coverImage}
             alt={event.title}
-            className="h-[250px] w-full object-cover sm:h-[300px]"
+            className="h-[248px] w-full object-cover sm:h-[280px]"
           />
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="absolute left-4 top-4 grid h-11 w-11 place-items-center rounded-full bg-card text-foreground shadow-md sm:left-5 sm:top-5 sm:h-12 sm:w-12"
+            className="absolute left-4 top-4 grid h-11 w-11 place-items-center rounded-full bg-card text-foreground shadow-md sm:left-5 sm:top-5"
             aria-label="返回"
           >
             <ArrowLeft className="h-[22px] w-[22px] sm:h-6 sm:w-6" />
           </button>
-          <span className="absolute right-4 top-4 rounded-full bg-card px-3 py-1.5 text-base font-black shadow-sm sm:right-5 sm:top-5">
+          <span className="absolute right-4 top-4 rounded-full bg-card px-3 py-1.5 text-sm font-black shadow-sm sm:right-5 sm:top-5">
             {categoryLabels[event.category] ?? '活动'}
           </span>
         </section>
 
-        <section className="ilocal-page-padding space-y-5 py-6 sm:space-y-7 sm:py-7">
-          <div className="space-y-3 sm:space-y-4">
-            <h1 className="text-3xl font-black leading-tight text-foreground sm:text-4xl">{event.title}</h1>
-            <p className="text-base font-bold text-muted-foreground sm:text-lg">
+        <section className="ilocal-page-padding space-y-5 py-6 sm:py-7">
+          <div className="space-y-3">
+            <h1 className="text-3xl font-black leading-tight text-foreground sm:text-[32px]">{event.title}</h1>
+            <p className="text-base font-bold text-muted-foreground">
               {event.organizer} · {event.location.district}
             </p>
-          <Badge className="rounded-full bg-secondary px-3 py-1.5 text-sm font-bold text-muted-foreground hover:bg-secondary sm:text-base">
+            <Badge className="rounded-full bg-secondary px-3 py-1.5 text-sm font-bold text-muted-foreground hover:bg-secondary">
               {isPlanned ? '已安排' : '可安排'}
             </Badge>
             {usingFallback && eventError && (
@@ -136,9 +136,9 @@ const EventDetail = () => {
             )}
           </div>
 
-          <p className="text-base font-semibold leading-relaxed text-muted-foreground sm:text-lg">{event.description}</p>
+          <p className="text-base font-semibold leading-relaxed text-muted-foreground">{event.description}</p>
 
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+          <div className="grid grid-cols-[repeat(2,minmax(0,1fr))] gap-3">
             <InfoTile icon={Clock} label="营业时间" value={`${event.dateLabel ?? event.date} ${event.time}`} />
             <InfoTile icon={MapPin} label="地址" value={event.location.address.replace('北京市', '')} />
             <InfoTile icon={MapPin} label="距离" value="18.5km" />
@@ -146,8 +146,8 @@ const EventDetail = () => {
           </div>
 
           <Card className="rounded-2xl border-border/80 bg-card p-4 shadow-none sm:p-5">
-            <h2 className="text-lg font-black text-foreground sm:text-xl">{event.title.includes('公园') ? '朝阳公园周末市集' : event.title}</h2>
-            <div className="mt-3 space-y-2 text-base font-semibold text-muted-foreground sm:text-lg">
+            <h2 className="text-lg font-black text-foreground">{event.title.includes('公园') ? '朝阳公园周末市集' : event.title}</h2>
+            <div className="mt-3 space-y-2 text-base font-semibold text-muted-foreground">
               <p className="flex items-center gap-2">
                 <CalendarPlus className="h-5 w-5" />
                 {event.dateLabel ?? event.date}, {event.time}
@@ -161,11 +161,11 @@ const EventDetail = () => {
           </Card>
 
           <div className="flex flex-wrap gap-3">
-            <Badge className="rounded-full bg-secondary px-3 py-1.5 text-sm font-bold text-muted-foreground hover:bg-secondary sm:px-4 sm:py-2 sm:text-base">
+            <Badge className="rounded-full bg-secondary px-3 py-1.5 text-sm font-bold text-muted-foreground hover:bg-secondary">
               {categoryLabels[event.category] ?? 'Other'}
             </Badge>
             {event.tags.slice(0, 3).map((tag) => (
-              <Badge key={tag} className="rounded-full bg-secondary px-3 py-1.5 text-sm font-bold text-muted-foreground hover:bg-secondary sm:px-4 sm:py-2 sm:text-base">
+              <Badge key={tag} className="rounded-full bg-secondary px-3 py-1.5 text-sm font-bold text-muted-foreground hover:bg-secondary">
                 {tag}
               </Badge>
             ))}
@@ -173,17 +173,17 @@ const EventDetail = () => {
 
           <button
             type="button"
-            className="grid h-28 w-full place-items-center rounded-2xl border border-border/80 bg-secondary/35 text-center text-primary sm:h-32"
+            className="grid h-28 w-full place-items-center rounded-2xl border border-border/80 bg-secondary/35 text-center text-primary"
           >
-            <span className="flex flex-col items-center gap-2 text-base font-black sm:text-lg">
-              <MapPin className="h-7 w-7 sm:h-8 sm:w-8" />
+            <span className="flex flex-col items-center gap-2 text-base font-black">
+              <MapPin className="h-7 w-7" />
               在腾讯地图中查看
             </span>
           </button>
         </section>
       </main>
 
-      <div className="fixed inset-x-0 bottom-[68px] z-40 border-t border-border/70 bg-card/95 px-2.5 py-2.5 backdrop-blur-xl sm:bottom-[74px] sm:px-4 sm:py-3">
+      <div className="fixed inset-x-0 bottom-[68px] z-40 border-t border-border/70 bg-card/95 px-2.5 py-2.5 backdrop-blur-xl sm:bottom-[70px] sm:px-3">
         <div className="ilocal-bottom-inner flex items-center gap-1.5 sm:gap-2">
           <ActionButton
             label="收藏"
@@ -209,9 +209,9 @@ const EventDetail = () => {
           />
           <Button
             onClick={handlePlanned}
-            className="h-11 min-w-0 flex-1 rounded-2xl px-2 text-[13px] font-black sm:h-12 sm:px-3 sm:text-base"
+            className="h-11 min-w-0 flex-1 rounded-2xl px-2 text-[13px] font-black sm:h-[46px] sm:px-3 sm:text-sm"
           >
-            <CalendarPlus className="mr-1 h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
+            <CalendarPlus className="mr-1 h-4 w-4 shrink-0" />
             {isPlanned ? '已安排' : '加入计划'}
           </Button>
         </div>
@@ -219,8 +219,8 @@ const EventDetail = () => {
 
       <Dialog open={shareOpen} onOpenChange={setShareOpen}>
         <DialogContent className="max-w-[340px] rounded-2xl p-5 sm:max-w-[380px] sm:p-6">
-          <h2 className="text-xl font-black sm:text-2xl">Share {event.title}</h2>
-          <p className="mt-3 text-base font-semibold text-muted-foreground sm:text-lg">Send this link to friends so they can check it out.</p>
+          <h2 className="text-xl font-black">Share {event.title}</h2>
+          <p className="mt-3 text-base font-semibold text-muted-foreground">Send this link to friends so they can check it out.</p>
           <div className="mt-6 flex items-center gap-3 rounded-2xl bg-muted p-4">
             <CornerUpRight className="h-5 w-5 shrink-0 text-muted-foreground" />
             <span className="min-w-0 flex-1 truncate text-base font-semibold">{shareUrl}</span>
@@ -249,12 +249,12 @@ interface InfoTileProps {
 }
 
 const InfoTile = ({ icon: Icon, label, value }: InfoTileProps) => (
-  <div className="min-h-[86px] rounded-2xl bg-secondary/35 p-4 sm:min-h-[96px] sm:p-5">
-    <div className="mb-2 flex items-center gap-2 text-sm font-black text-muted-foreground sm:mb-3 sm:text-base">
+  <div className="min-w-0 rounded-2xl bg-secondary/35 p-4 sm:min-h-[92px]">
+    <div className="mb-2 flex items-center gap-2 text-sm font-black text-muted-foreground">
       <Icon className="h-5 w-5" />
       {label}
     </div>
-    <div className="line-clamp-2 text-lg font-black leading-tight text-foreground sm:text-xl">{value}</div>
+    <div className="line-clamp-2 break-words text-lg font-black leading-tight text-foreground">{value}</div>
   </div>
 );
 
@@ -271,7 +271,7 @@ const ActionButton = ({ label, icon, active, onClick }: ActionButtonProps) => (
     onClick={onClick}
     aria-label={label}
     className={[
-      'grid h-10 w-10 shrink-0 place-items-center rounded-xl border text-muted-foreground transition-colors sm:h-12 sm:w-12 sm:rounded-2xl',
+      'grid h-10 w-10 shrink-0 place-items-center rounded-xl border text-muted-foreground transition-colors sm:h-[46px] sm:w-[46px]',
       active ? 'border-primary bg-primary text-primary-foreground' : 'border-border/80 bg-card hover:bg-secondary/45',
     ].join(' ')}
   >

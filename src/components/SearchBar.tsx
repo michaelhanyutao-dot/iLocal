@@ -29,7 +29,7 @@ const SearchBar = ({ onSearch, placeholder = "搜索活动、地点或主办方.
           placeholder={placeholder}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="h-12 rounded-2xl border-transparent bg-secondary/55 pl-11 pr-10 text-base font-semibold placeholder:text-muted-foreground focus:bg-secondary/70 sm:h-[52px]"
+          className="h-12 rounded-2xl border-transparent bg-secondary/55 pl-11 pr-10 text-[15px] font-semibold placeholder:text-muted-foreground focus:bg-secondary/70 sm:h-[50px] sm:text-base"
         />
         {query && (
           <button

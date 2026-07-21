@@ -31,7 +31,7 @@ const EventCard = ({ event, distance, onClick, isSaved, onToggleSaved, className
       ].filter(Boolean).join(' ')}
       onClick={onClick}
     >
-      <div className={['relative overflow-hidden', isTall ? 'h-[190px] sm:h-[220px]' : 'h-[150px] sm:h-[180px]'].join(' ')}>
+      <div className={['relative overflow-hidden', isTall ? 'h-[188px] sm:h-[206px]' : 'h-[148px] sm:h-[168px]'].join(' ')}>
         <img 
           src={event.coverImage} 
           alt={event.title}
@@ -56,20 +56,20 @@ const EventCard = ({ event, distance, onClick, isSaved, onToggleSaved, className
         </button>
       </div>
       
-      <div className="space-y-2.5 p-3.5 sm:space-y-3 sm:p-4">
+      <div className="space-y-2.5 p-3.5 sm:p-4">
         <div className="space-y-1">
-          <h3 className="line-clamp-2 text-base font-extrabold leading-snug text-foreground sm:text-lg">{event.title}</h3>
-          <p className="line-clamp-2 text-sm font-semibold leading-relaxed text-muted-foreground sm:text-[15px]">{event.description}</p>
+          <h3 className="line-clamp-2 text-base font-extrabold leading-snug text-foreground sm:text-[17px]">{event.title}</h3>
+          <p className="line-clamp-2 text-sm font-semibold leading-relaxed text-muted-foreground">{event.description}</p>
         </div>
         
-        <div className="space-y-1.5 text-xs font-semibold text-muted-foreground sm:space-y-2 sm:text-sm">
+        <div className="space-y-1.5 text-xs font-semibold text-muted-foreground sm:text-[13px]">
           <div className="flex items-center gap-2 text-primary">
             <Clock className="h-4 w-4" />
             <span>{event.dateLabel ?? event.date}, {event.time}</span>
           </div>
           <div className="flex items-end justify-between gap-2">
             <span className="truncate">{event.location.district}</span>
-            <strong className="shrink-0 text-sm text-foreground sm:text-base">
+            <strong className="shrink-0 text-sm text-foreground">
               {event.ticket.isFree ? '免费' : `¥${event.ticket.price}`}
             </strong>
           </div>
