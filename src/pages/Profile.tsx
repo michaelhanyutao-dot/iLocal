@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { mockEvents } from '@/data/mockEvents';
 import EventCard from '@/components/EventCard';
 import { useToast } from '@/hooks/use-toast';
+import AppShell from '@/components/AppShell';
 
 const Profile = () => {
   const { user, signOut } = useAuth();
@@ -41,7 +42,8 @@ const Profile = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-background">
+    <AppShell>
+    <div className="min-h-screen bg-gradient-background pb-6">
       {/* Header */}
       <div className="sticky top-0 z-50 bg-card/90 backdrop-blur-lg border-b border-border/50">
         <div className="container mx-auto px-4 py-3">
@@ -198,6 +200,7 @@ const Profile = () => {
         </Tabs>
       </div>
     </div>
+    </AppShell>
   );
 };
 

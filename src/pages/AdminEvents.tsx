@@ -98,6 +98,7 @@ const AdminEvents = () => {
   });
 
   const categoryOptions = [
+    { value: 'coffee', label: '咖啡活动', icon: '☕' },
     { value: 'music', label: '音乐演出', icon: '🎵' },
     { value: 'market', label: '创意市集', icon: '🛒' },
     { value: 'exhibition', label: '艺术展览', icon: '🎨' },

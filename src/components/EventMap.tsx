@@ -50,11 +50,13 @@ const EventMap = ({ events, userLocation, selectedEvent, onEventSelect }: EventM
     // Add event markers
     const markers = events.map(event => {
       const categoryColors = {
-        music: '#B794F6',
-        market: '#68D391', 
-        party: '#F6AD55',
-        exhibition: '#63B3ED',
-        bar: '#FC8181'
+        coffee: '#7D9255',
+        music: '#7D9255',
+        market: '#9AAA7A',
+        party: '#C8B16C',
+        exhibition: '#A4B6A0',
+        bar: '#8D9B6D',
+        sports: '#6F8264'
       };
 
       const marker = new window.AMap.Marker({
@@ -95,11 +97,13 @@ const EventMap = ({ events, userLocation, selectedEvent, onEventSelect }: EventM
 
   const getCategoryIcon = (category: string) => {
     const icons = {
+      coffee: '☕',
       music: '🎵',
       market: '🛍️',
       party: '🥂',
       exhibition: '🖼️',
-      bar: '🎧'
+      bar: '🎧',
+      sports: '🏃'
     };
     return icons[category as keyof typeof icons] || '📍';
   };

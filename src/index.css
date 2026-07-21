@@ -8,9 +8,9 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Pastel Color Palette */
-    --background: 330 25% 97%;
-    --foreground: 240 15% 25%;
+    /* Founder mobile palette */
+    --background: 48 24% 97%;
+    --foreground: 60 6% 12%;
 
     --card: 0 0% 100%;
     --card-foreground: 240 15% 25%;
@@ -18,48 +18,47 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 240 15% 25%;
 
-    /* Soft Lavender Primary */
-    --primary: 270 40% 75%;
+    /* Olive Primary */
+    --primary: 79 25% 46%;
     --primary-foreground: 0 0% 100%;
 
-    /* Soft Mint Secondary */
-    --secondary: 150 30% 85%;
+    /* Pale Green Secondary */
+    --secondary: 98 20% 91%;
     --secondary-foreground: 240 15% 25%;
 
-    /* Peach Accent */
-    --accent: 20 50% 85%;
+    --accent: 48 40% 86%;
     --accent-foreground: 240 15% 25%;
 
-    /* Soft Pink Muted */
-    --muted: 340 25% 90%;
-    --muted-foreground: 240 10% 50%;
+    --muted: 80 12% 91%;
+    --muted-foreground: 84 11% 43%;
 
     --destructive: 0 65% 70%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 320 20% 88%;
-    --input: 320 20% 88%;
-    --ring: 270 40% 75%;
+    --border: 78 17% 86%;
+    --input: 78 17% 86%;
+    --ring: 79 25% 46%;
 
     --radius: 1rem;
 
     /* Event Category Colors */
-    --music: 280 45% 75%;
-    --market: 150 40% 75%;
-    --party: 320 50% 80%;
-    --exhibition: 200 35% 75%;
-    --bar: 40 45% 75%;
+    --coffee: 79 25% 46%;
+    --music: 79 25% 46%;
+    --market: 93 22% 56%;
+    --party: 44 42% 60%;
+    --exhibition: 104 15% 64%;
+    --bar: 70 18% 52%;
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(270 40% 75%), hsl(300 45% 80%));
-    --gradient-secondary: linear-gradient(135deg, hsl(150 30% 85%), hsl(180 35% 80%));
-    --gradient-background: linear-gradient(180deg, hsl(330 25% 97%), hsl(320 20% 95%));
-    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(330 15% 98%));
+    --gradient-primary: linear-gradient(135deg, hsl(79 25% 46%), hsl(90 22% 56%));
+    --gradient-secondary: linear-gradient(135deg, hsl(98 20% 91%), hsl(70 24% 90%));
+    --gradient-background: linear-gradient(180deg, hsl(48 24% 97%), hsl(70 18% 94%));
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(48 24% 97%));
 
     /* Shadows */
-    --shadow-soft: 0 4px 20px hsl(270 40% 75% / 0.15);
-    --shadow-card: 0 2px 15px hsl(320 30% 80% / 0.12);
-    --shadow-float: 0 8px 30px hsl(270 40% 75% / 0.2);
+    --shadow-soft: 0 4px 20px hsl(79 25% 46% / 0.14);
+    --shadow-card: 0 2px 15px hsl(78 17% 70% / 0.18);
+    --shadow-float: 0 8px 30px hsl(79 25% 46% / 0.22);
 
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -128,6 +127,14 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  html,
+  body,
+  #root {
+    min-height: 100%;
+    width: 100%;
+    overflow-x: hidden;
   }
 }
 

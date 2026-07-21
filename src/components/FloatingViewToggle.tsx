@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { List, Map } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface FloatingViewToggleProps {
@@ -10,28 +11,29 @@ const FloatingViewToggle = ({ viewMode, onViewModeChange }: FloatingViewTogglePr
   const { t } = useLanguage();
   
   const viewModes = [
-    { key: 'map', label: t('view.map'), icon: '🗺️' },
-    { key: 'list', label: t('view.list'), icon: '📋' }
+    { key: 'map' as const, label: t('view.map'), icon: Map },
+    { key: 'list' as const, label: t('view.list'), icon: List }
   ];
 
   return (
-    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
-      <div className="flex gap-1 p-1 bg-background/90 backdrop-blur-lg rounded-full shadow-xl border border-border/50">
+    <div className="fixed bottom-[84px] left-1/2 z-40 -translate-x-1/2">
+      <div className="flex gap-1 rounded-full border border-border/80 bg-card/95 p-1 shadow-float backdrop-blur-xl">
         {viewModes.map((mode) => {
           const isSelected = viewMode === mode.key;
+          const Icon = mode.icon;
           return (
             <Button
               key={mode.key}
               variant="ghost"
               size="sm"
-              onClick={() => onViewModeChange(mode.key as 'map' | 'list')}
-              className={`transition-smooth px-4 py-2 rounded-full ${
+              onClick={() => onViewModeChange(mode.key)}
+              className={`h-12 rounded-full px-5 text-base font-bold transition-smooth ${
                 isSelected 
                   ? 'bg-primary text-primary-foreground shadow-md' 
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
               }`}
             >
-              <span className="mr-2">{mode.icon}</span>
+              <Icon className="mr-2 h-5 w-5" />
               {mode.label}
             </Button>
           );

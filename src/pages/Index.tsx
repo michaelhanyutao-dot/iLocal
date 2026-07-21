@@ -1,41 +1,40 @@
-import { useState, useMemo } from 'react';
-import { Event, EventCategory } from '@/types/event';
-import { mockEvents } from '@/data/mockEvents';
-import { useLocation } from '@/hooks/useLocation';
-import { useAuth } from '@/contexts/AuthContext';
-import { useLanguage } from '@/contexts/LanguageContext';
-import EventMap from '@/components/EventMap';
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { AlertCircle, Compass, LocateFixed, Send, SlidersHorizontal } from 'lucide-react';
+import AppShell from '@/components/AppShell';
 import EventCard from '@/components/EventCard';
-import SearchBar from '@/components/SearchBar';
+import EventMap from '@/components/EventMap';
 import FilterBar from '@/components/FilterBar';
 import FloatingViewToggle from '@/components/FloatingViewToggle';
+import SearchBar from '@/components/SearchBar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Send, Loader2, AlertCircle, Users, Globe } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { mockEvents } from '@/data/mockEvents';
+import { useLocation } from '@/hooks/useLocation';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
+import { useEventLibrary } from '@/lib/eventLibrary';
+import { Event, EventCategory } from '@/types/event';
 
 const Index = () => {
   const [events] = useState<Event[]>(mockEvents);
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(mockEvents[0] ?? null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<EventCategory[]>([]);
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
-  
+
   const { location, loading: locationLoading, error: locationError, requestLocation } = useLocation();
-  const { user } = useAuth();
-  const { language, setLanguage, t } = useLanguage();
+  const { language, setLanguage } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const library = useEventLibrary();
 
-  // Filter events based on search and filters
   const filteredEvents = useMemo(() => {
     let filtered = events;
 
-    // Search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(event => 
+      filtered = filtered.filter(event =>
         event.title.toLowerCase().includes(query) ||
         event.description.toLowerCase().includes(query) ||
         event.organizer.toLowerCase().includes(query) ||
@@ -44,18 +43,16 @@ const Index = () => {
       );
     }
 
-    // Category filter
     if (selectedCategories.length > 0) {
       filtered = filtered.filter(event => selectedCategories.includes(event.category));
     }
-
 
     return filtered;
   }, [events, searchQuery, selectedCategories]);
 
   const handleCategoryToggle = (category: EventCategory) => {
-    setSelectedCategories(prev => 
-      prev.includes(category) 
+    setSelectedCategories(prev =>
+      prev.includes(category)
         ? prev.filter(c => c !== category)
         : [...prev, category]
     );
@@ -65,7 +62,7 @@ const Index = () => {
     setSelectedEvent(event);
     toast({
       title: event.title,
-      description: `${event.date} ${event.time} • ${event.location.district}`,
+      description: `${event.dateLabel ?? event.date} ${event.time} · ${event.location.district}`,
     });
   };
 
@@ -73,138 +70,122 @@ const Index = () => {
     requestLocation();
     if (locationError) {
       toast({
-        title: "位置权限",
-        description: "请在浏览器设置中允许位置访问以获得更好的体验",
-        variant: "destructive"
+        title: '位置权限',
+        description: '请在浏览器设置中允许位置访问以获得更好的体验',
+        variant: 'destructive',
       });
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-background">
-      {/* Header with Search and Filters - Combined Sticky */}
-      <div className="sticky top-0 z-50 bg-card/80 backdrop-blur-lg border-b border-border/50">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center">
-                <Send className="w-5 h-5 text-white" />
+    <AppShell>
+      <main className="mx-auto min-h-screen w-full max-w-[390px] bg-background px-5 pb-10 pt-8">
+        <header className="space-y-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="grid h-14 w-14 place-items-center rounded-2xl bg-primary text-primary-foreground">
+                <Compass className="h-8 w-8" strokeWidth={2.3} />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-foreground">{t('app.title')}</h1>
-                <p className="text-xs text-muted-foreground">{t('app.subtitle')}</p>
+                <h1 className="text-3xl font-black leading-none tracking-normal text-foreground">iLocal</h1>
+                <p className="mt-2 text-base font-semibold text-muted-foreground">发现身边正在发生的事</p>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setLanguage(language === 'zh' ? 'en' : 'zh')}
-                className="text-xs px-2 py-1 h-7"
-              >
-                <Globe className="w-3 h-3 mr-1" />
-                {language === 'zh' ? 'EN' : '中文'}
-              </Button>
-              <Button 
-                variant="outline"
-                size="sm"
-                onClick={() => navigate(user ? '/me' : '/login')}
-                className="text-xs px-3 py-1 h-7"
-              >
-                <Users className="w-3 h-3 mr-1" />
-                {user ? t('header.profile') : t('header.loginRegister')}
-              </Button>
-            </div>
-          </div>
-          
-          <div className="space-y-3">
-            <div className="max-w-lg">
-              <SearchBar onSearch={setSearchQuery} />
-            </div>
-            {/* Activity Category Filters */}
-            <div>
-              <FilterBar
-                selectedCategories={selectedCategories}
-                onCategoryToggle={handleCategoryToggle}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="container mx-auto px-4 py-6">
-        {viewMode === 'map' ? (
-          /* Map Mode */
-          <div className="mb-6 relative">
-            <Card className="p-0 overflow-hidden bg-gradient-card border-border/50">
-              <div className="h-[400px] lg:h-[500px]">
-                <EventMap
-                  events={filteredEvents}
-                  userLocation={location}
-                  selectedEvent={selectedEvent}
-                  onEventSelect={handleEventSelect}
-                />
-              </div>
-            </Card>
-            
-            {/* Location button only in map mode */}
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={handleLocationRequest}
-              disabled={locationLoading}
-              className="absolute top-4 right-4 bg-card/90 backdrop-blur-lg text-xs px-3 py-2 h-8 shadow-lg"
+            <button
+              type="button"
+              onClick={() => setLanguage(language === 'zh' ? 'en' : 'zh')}
+              className="grid h-12 w-12 place-items-center rounded-full border border-border/80 bg-card text-lg font-bold text-muted-foreground"
+              aria-label="切换语言"
             >
-              {locationLoading ? (
-                <Loader2 className="w-3 h-3 animate-spin mr-1" />
-              ) : locationError ? (
-                <AlertCircle className="w-3 h-3 mr-1 text-destructive" />
-              ) : (
-                <Send className="w-3 h-3 mr-1" />
-              )}
-              {locationLoading ? t('header.locating') : locationError ? t('header.relocate') : t('header.currentLocation')}
-            </Button>
+              {language === 'zh' ? '中' : 'EN'}
+            </button>
           </div>
-        ) : (
-          /* List Mode */
-          <div className="space-y-4">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-foreground">
-                {t('events.found', { count: filteredEvents.length })}
-              </h2>
-            </div>
-            
-            {filteredEvents.length === 0 ? (
-              <Card className="p-8 text-center bg-gradient-card border-border/50">
-                <div className="text-muted-foreground">
-                  <p className="text-lg mb-2">{t('events.noResults')}</p>
-                  <p className="text-sm">{t('events.tryAdjust')}</p>
+
+          <div className="flex gap-3">
+            <SearchBar onSearch={setSearchQuery} placeholder="搜索活动、地点或主办方" />
+            <button
+              type="button"
+              className="grid h-14 w-16 shrink-0 place-items-center rounded-2xl bg-secondary/70 text-foreground"
+              aria-label="筛选"
+            >
+              <SlidersHorizontal className="h-7 w-7" />
+            </button>
+          </div>
+
+          <FilterBar
+            selectedCategories={selectedCategories}
+            onCategoryToggle={handleCategoryToggle}
+            onClearCategories={() => setSelectedCategories([])}
+          />
+        </header>
+
+        <section className="mt-8">
+          {viewMode === 'map' ? (
+            <div className="relative">
+              <Card className="overflow-hidden rounded-[28px] border-border/80 bg-card p-0">
+                <div className="h-[610px]">
+                  <EventMap
+                    events={filteredEvents}
+                    userLocation={location}
+                    selectedEvent={selectedEvent}
+                    onEventSelect={handleEventSelect}
+                  />
                 </div>
               </Card>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredEvents.map((event) => (
-                  <EventCard
-                    key={event.id}
-                    event={event}
-                    distance="1.2km"
-                    duration="15分钟"
-                    onClick={() => navigate(user ? `/event/${event.id}` : '/login')}
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleLocationRequest}
+                disabled={locationLoading}
+                className="absolute right-4 top-4 h-14 w-14 rounded-full bg-card shadow-lg"
+                aria-label="当前位置"
+              >
+                {locationError ? (
+                  <AlertCircle className="h-6 w-6 text-destructive" />
+                ) : (
+                  <LocateFixed className="h-6 w-6 text-primary" />
+                )}
+              </Button>
+              {selectedEvent && (
+                <button
+                  type="button"
+                  onClick={() => navigate(`/event/${selectedEvent.id}`)}
+                  className="absolute inset-x-4 bottom-5 flex items-center gap-3 rounded-3xl bg-card/95 p-3 text-left shadow-float backdrop-blur"
+                >
+                  <img
+                    src={selectedEvent.coverImage}
+                    alt={selectedEvent.title}
+                    className="h-16 w-16 rounded-2xl object-cover"
                   />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-      
-      {/* Floating View Toggle */}
-      <FloatingViewToggle
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-      />
-    </div>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-base font-black text-foreground">{selectedEvent.title}</span>
+                    <span className="mt-1 block truncate text-sm font-semibold text-muted-foreground">
+                      {selectedEvent.location.district} · {selectedEvent.ticket.isFree ? '免费' : `¥${selectedEvent.ticket.price}`}
+                    </span>
+                  </span>
+                  <Send className="h-5 w-5 shrink-0 text-primary" />
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 items-start gap-4">
+              {filteredEvents.map((event) => (
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  distance="1.2km"
+                  isSaved={library.isSaved(event.id)}
+                  onToggleSaved={() => library.toggleSaved(event.id)}
+                  onClick={() => navigate(`/event/${event.id}`)}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      </main>
+
+      <FloatingViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+    </AppShell>
   );
 };
 

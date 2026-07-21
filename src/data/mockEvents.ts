@@ -11,7 +11,8 @@ export const mockEvents: Event[] = [
     title: '独立音乐现场 - 春日限定',
     description: '本地独立乐队专场演出，感受原创音乐的力量',
     category: 'music' as EventCategory,
-    date: '2024-03-15',
+    date: '2026-07-22',
+    dateLabel: 'Jul 22',
     time: '20:00',
     location: {
       address: '北京市朝阳区工体北路8号三里屯SOHO',
@@ -34,7 +35,8 @@ export const mockEvents: Event[] = [
     title: '周末创意市集',
     description: '手工艺品、原创设计、美食小吃一应俱全',
     category: 'market' as EventCategory,
-    date: '2024-03-16',
+    date: '2026-07-25',
+    dateLabel: 'Jul 25',
     time: '10:00',
     location: {
       address: '北京市海淀区中关村大街1号中关村广场',
@@ -52,11 +54,12 @@ export const mockEvents: Event[] = [
   },
   {
     id: '3',
-    title: '798艺术展 - 未来视界',
-    description: '当代艺术作品展，探索科技与艺术的边界',
+    title: '798夜间艺术展',
+    description: '当代艺术展，夜间延时开放。',
     category: 'exhibition' as EventCategory,
-    date: '2024-03-17',
-    time: '14:00',
+    date: '2026-07-23',
+    dateLabel: 'Jul 23',
+    time: '20:00',
     location: {
       address: '北京市朝阳区酒仙桥路4号798艺术区',
       lat: 39.9845,
@@ -78,7 +81,8 @@ export const mockEvents: Event[] = [
     title: '户外音乐派对',
     description: '在星空下享受电子音乐的狂欢',
     category: 'party' as EventCategory,
-    date: '2024-03-15',
+    date: '2026-07-24',
+    dateLabel: 'Jul 24',
     time: '19:00',
     location: {
       address: '北京市顺义区温榆河公园',
@@ -101,7 +105,8 @@ export const mockEvents: Event[] = [
     title: '酒吧驻唱夜',
     description: '本地歌手深情演唱，与美酒为伴',
     category: 'bar' as EventCategory,
-    date: '2024-03-15',
+    date: '2026-07-21',
+    dateLabel: 'Jul 21',
     time: '21:30',
     location: {
       address: '北京市东城区南锣鼓巷108号',
@@ -122,7 +127,8 @@ export const mockEvents: Event[] = [
     title: '周末篮球友谊赛',
     description: '业余篮球爱好者聚集，享受运动快乐',
     category: 'sports' as EventCategory,
-    date: '2024-03-16',
+    date: '2026-07-26',
+    dateLabel: 'Jul 26',
     time: '14:00',
     location: {
       address: '北京市海淀区奥林匹克公园篮球场',

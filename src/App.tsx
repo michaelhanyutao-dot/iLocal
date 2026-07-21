@@ -12,6 +12,7 @@ import Auth from "./pages/Auth";
 import Login from "./pages/Login";
 import Profile from "./pages/Profile";
 import EventDetail from "./pages/EventDetail";
+import Saved from "./pages/Saved";
 import Admin from "./pages/Admin";
 import AdminEvents from "./pages/AdminEvents";
 import AdminTags from "./pages/AdminTags";
@@ -30,6 +31,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/event/:id" element={<EventDetail />} />
+              <Route path="/saved" element={<Saved />} />
               <Route path="/login" element={<Login />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/me" element={<Profile />} />

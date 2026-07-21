@@ -11,7 +11,7 @@ export interface EventTicket {
   ticketUrl?: string;
 }
 
-export type EventCategory = 'music' | 'market' | 'party' | 'exhibition' | 'bar' | 'sports';
+export type EventCategory = 'coffee' | 'music' | 'market' | 'party' | 'exhibition' | 'bar' | 'sports';
 
 export interface Event {
   id: string;
@@ -19,6 +19,7 @@ export interface Event {
   description: string;
   category: EventCategory;
   date: string;
+  dateLabel?: string;
   time: string;
   location: EventLocation;
   ticket: EventTicket;

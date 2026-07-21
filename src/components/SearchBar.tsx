@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { Search, X } from 'lucide-react';
 
 interface SearchBarProps {
@@ -22,34 +21,25 @@ const SearchBar = ({ onSearch, placeholder = "搜索活动、地点或主办方.
   };
 
   return (
-    <form onSubmit={handleSubmit} className="relative w-full">
+    <form onSubmit={handleSubmit} className="relative min-w-0 flex-1">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+        <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
         <Input
           type="text"
           placeholder={placeholder}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="pl-10 pr-20 rounded-full border-border/50 bg-card/80 backdrop-blur-sm focus:bg-card transition-smooth"
+          className="h-14 rounded-2xl border-transparent bg-secondary/55 pl-12 pr-12 text-lg font-semibold placeholder:text-muted-foreground focus:bg-secondary/70"
         />
         {query && (
-          <Button
+          <button
             type="button"
-            variant="ghost"
-            size="sm"
             onClick={handleClear}
-            className="absolute right-12 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-muted/50 rounded-full"
+            className="absolute right-4 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full text-muted-foreground hover:bg-muted/50"
           >
-            <X className="w-3 h-3" />
-          </Button>
+            <X className="h-4 w-4" />
+          </button>
         )}
-        <Button
-          type="submit"
-          size="sm"
-          className="absolute right-1 top-1/2 transform -translate-y-1/2 rounded-full h-8 px-3 bg-gradient-primary hover:opacity-90 transition-smooth"
-        >
-          搜索
-        </Button>
       </div>
     </form>
   );

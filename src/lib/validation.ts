@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 // Event category enum matching the database constraint
-export const eventCategories = ['music', 'market', 'party', 'exhibition', 'bar', 'sports'] as const;
+export const eventCategories = ['coffee', 'music', 'market', 'party', 'exhibition', 'bar', 'sports'] as const;
 
 export const eventStatus = ['active', 'inactive', 'draft'] as const;
 
