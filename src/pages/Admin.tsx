@@ -15,7 +15,8 @@ import {
   ArrowLeft,
   Settings,
   Eye,
-  Edit
+  Edit,
+  FileSpreadsheet
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -204,6 +205,25 @@ const Admin = () => {
               <Button className="w-full">
                 <Edit className="w-4 h-4 mr-2" />
                 管理活动
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-card border-border/50 hover:shadow-lg transition-shadow cursor-pointer"
+                onClick={() => navigate('/admin/import')}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileSpreadsheet className="w-5 h-5" />
+                批量导入
+              </CardTitle>
+              <CardDescription>
+                从 CSV 批量写入活动，适合早期快速铺内容
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button className="w-full" variant="outline">
+                <FileSpreadsheet className="w-4 h-4 mr-2" />
+                导入活动
               </Button>
             </CardContent>
           </Card>

@@ -17,7 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { mockEvents } from '@/data/mockEvents';
+import { useEvent } from '@/hooks/useEvents';
 import { useToast } from '@/hooks/use-toast';
 import { useEventLibrary } from '@/lib/eventLibrary';
 
@@ -37,8 +37,17 @@ const EventDetail = () => {
   const { toast } = useToast();
   const library = useEventLibrary();
   const [shareOpen, setShareOpen] = useState(false);
+  const { event, loading, usingFallback, error: eventError } = useEvent(id);
 
-  const event = mockEvents.find(e => e.id === id);
+  if (loading && !event) {
+    return (
+      <AppShell>
+        <main className="ilocal-page flex min-h-screen items-center justify-center px-5 text-center">
+          <div className="text-base font-bold text-muted-foreground">正在加载活动...</div>
+        </main>
+      </AppShell>
+    );
+  }
 
   if (!event) {
     return (
@@ -117,9 +126,14 @@ const EventDetail = () => {
             <p className="text-base font-bold text-muted-foreground sm:text-lg">
               {event.organizer} · {event.location.district}
             </p>
-            <Badge className="rounded-full bg-secondary px-3 py-1.5 text-sm font-bold text-muted-foreground hover:bg-secondary sm:text-base">
+          <Badge className="rounded-full bg-secondary px-3 py-1.5 text-sm font-bold text-muted-foreground hover:bg-secondary sm:text-base">
               {isPlanned ? '已安排' : '可安排'}
             </Badge>
+            {usingFallback && eventError && (
+              <p className="rounded-2xl bg-secondary/55 px-4 py-3 text-sm font-semibold text-muted-foreground">
+                {eventError}
+              </p>
+            )}
           </div>
 
           <p className="text-base font-semibold leading-relaxed text-muted-foreground sm:text-lg">{event.description}</p>

@@ -15,6 +15,7 @@ import EventDetail from "./pages/EventDetail";
 import Saved from "./pages/Saved";
 import Admin from "./pages/Admin";
 import AdminEvents from "./pages/AdminEvents";
+import AdminImport from "./pages/AdminImport";
 import AdminTags from "./pages/AdminTags";
 import NotFound from "./pages/NotFound";
 
@@ -52,7 +53,15 @@ const App = () => (
                   </ProtectedRoute>
                 } 
               />
-              <Route 
+              <Route
+                path="/admin/import"
+                element={
+                  <ProtectedRoute requireAdmin={true}>
+                    <AdminImport />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/admin/tags" 
                 element={
                   <ProtectedRoute requireAdmin={true}>

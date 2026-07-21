@@ -6,7 +6,7 @@ import AppShell from '@/components/AppShell';
 import EventCard from '@/components/EventCard';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { mockEvents } from '@/data/mockEvents';
+import { useEvents } from '@/hooks/useEvents';
 import { useEventLibrary } from '@/lib/eventLibrary';
 
 type SavedView = 'list' | 'calendar';
@@ -34,18 +34,19 @@ const Saved = () => {
   const [calendarMode, setCalendarMode] = useState<CalendarMode>('month');
   const navigate = useNavigate();
   const library = useEventLibrary();
+  const { events } = useEvents();
 
   const eventsByFilter = useMemo(() => {
     const pastCutoff = '2026-07-21';
-    const byId = (ids: string[]) => mockEvents.filter((event) => ids.includes(event.id));
+    const byId = (ids: string[]) => events.filter((event) => ids.includes(event.id));
 
     return {
       saved: byId(library.savedIds),
       want: byId(library.likedIds),
       planned: byId(library.plannedIds),
-      past: mockEvents.filter((event) => event.date < pastCutoff && library.savedIds.includes(event.id)),
-    } satisfies Record<SavedFilter, typeof mockEvents>;
-  }, [library.likedIds, library.plannedIds, library.savedIds]);
+      past: events.filter((event) => event.date < pastCutoff && library.savedIds.includes(event.id)),
+    } satisfies Record<SavedFilter, typeof events>;
+  }, [events, library.likedIds, library.plannedIds, library.savedIds]);
 
   const visibleEvents = eventsByFilter[filter];
   const calendarEvents = eventsByFilter.planned.length > 0 ? eventsByFilter.planned : eventsByFilter.saved;

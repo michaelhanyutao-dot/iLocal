@@ -104,6 +104,7 @@ const AdminEvents = () => {
     { value: 'exhibition', label: '艺术展览', icon: '🎨' },
     { value: 'party', label: '聚会派对', icon: '🎉' },
     { value: 'bar', label: '酒吧活动', icon: '🍻' },
+    { value: 'sports', label: '运动活动', icon: '🏃' },
   ];
 
   useEffect(() => {
@@ -328,10 +329,15 @@ const AdminEvents = () => {
               </h1>
             </div>
             
-            <Button onClick={handleCreate}>
-              <Plus className="w-4 h-4 mr-2" />
-              新建活动
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => navigate('/admin/import')}>
+                批量导入
+              </Button>
+              <Button onClick={handleCreate}>
+                <Plus className="w-4 h-4 mr-2" />
+                新建活动
+              </Button>
+            </div>
           </div>
         </div>
       </div>

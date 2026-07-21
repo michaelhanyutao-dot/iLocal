@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle, Compass, LocateFixed, Send, SlidersHorizontal } from 'lucide-react';
 import AppShell from '@/components/AppShell';
@@ -10,15 +10,15 @@ import SearchBar from '@/components/SearchBar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { mockEvents } from '@/data/mockEvents';
+import { useEvents } from '@/hooks/useEvents';
 import { useLocation } from '@/hooks/useLocation';
 import { useToast } from '@/hooks/use-toast';
 import { useEventLibrary } from '@/lib/eventLibrary';
 import { Event, EventCategory } from '@/types/event';
 
 const Index = () => {
-  const [events] = useState<Event[]>(mockEvents);
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(mockEvents[0] ?? null);
+  const { events, loading: eventsLoading, usingFallback, error: eventsError } = useEvents();
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(events[0] ?? null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<EventCategory[]>([]);
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
@@ -28,6 +28,13 @@ const Index = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const library = useEventLibrary();
+
+  useEffect(() => {
+    setSelectedEvent((current) => {
+      if (!current) return events[0] ?? null;
+      return events.some((event) => event.id === current.id) ? current : events[0] ?? null;
+    });
+  }, [events]);
 
   const filteredEvents = useMemo(() => {
     let filtered = events;
@@ -117,6 +124,12 @@ const Index = () => {
             onCategoryToggle={handleCategoryToggle}
             onClearCategories={() => setSelectedCategories([])}
           />
+
+          {usingFallback && eventsError && (
+            <div className="rounded-2xl bg-secondary/55 px-4 py-3 text-sm font-semibold text-muted-foreground">
+              {eventsError}
+            </div>
+          )}
         </header>
 
         <section className="mt-6 sm:mt-8">
@@ -132,6 +145,11 @@ const Index = () => {
                   />
                 </div>
               </Card>
+              {eventsLoading && (
+                <div className="absolute inset-x-8 top-6 rounded-full bg-card/95 px-4 py-2 text-center text-sm font-bold text-muted-foreground shadow-soft">
+                  正在加载活动...
+                </div>
+              )}
               <Button
                 variant="outline"
                 size="icon"
