@@ -1,72 +1,73 @@
-# iLocal
+# Welcome to your Lovable project
 
-Mobile-first Beijing local discovery and personal activity planning MVP.
+## Project info
 
-## Current Stack
+**URL**: https://lovable.dev/projects/4089ed67-2e49-4c72-a430-cd30286a0b70
 
-- React + Vite web app
-- Supabase-ready data layer
-- Beijing demo fallback data when Supabase env vars are not configured
-- Supabase SQL migration with RLS and explicit Data API grants
-- Explore, Saved, Admin Import, Profile starter screens
+## How can I edit this code?
 
-## Local Setup
+There are several ways of editing your application.
 
-```bash
-pnpm install
-cp .env.example .env.local
-pnpm run dev
+**Use Lovable**
+
+Simply visit the [Lovable Project](https://lovable.dev/projects/4089ed67-2e49-4c72-a430-cd30286a0b70) and start prompting.
+
+Changes made via Lovable will be committed automatically to this repo.
+
+**Use your preferred IDE**
+
+If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+
+The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+
+Follow these steps:
+
+```sh
+# Step 1: Clone the repository using the project's Git URL.
+git clone <YOUR_GIT_URL>
+
+# Step 2: Navigate to the project directory.
+cd <YOUR_PROJECT_NAME>
+
+# Step 3: Install the necessary dependencies.
+npm i
+
+# Step 4: Start the development server with auto-reloading and an instant preview.
+npm run dev
 ```
 
-Then open:
+**Edit a file directly in GitHub**
 
-```text
-http://127.0.0.1:5173/
-```
+- Navigate to the desired file(s).
+- Click the "Edit" button (pencil icon) at the top right of the file view.
+- Make your changes and commit the changes.
 
-## Supabase
+**Use GitHub Codespaces**
 
-Project ref:
+- Navigate to the main page of your repository.
+- Click on the "Code" button (green button) near the top right.
+- Select the "Codespaces" tab.
+- Click on "New codespace" to launch a new Codespace environment.
+- Edit files directly within the Codespace and commit and push your changes once you're done.
 
-```text
-opjiacaqzljurmyknrlj
-```
+## What technologies are used for this project?
 
-The initial schema is in:
+This project is built with:
 
-```text
-supabase/migrations/202607210001_initial_ilocal_schema.sql
-```
+- Vite
+- TypeScript
+- React
+- shadcn-ui
+- Tailwind CSS
 
-Apply it through the Supabase SQL editor or, after Supabase CLI auth is configured:
+## How can I deploy this project?
 
-```bash
-supabase link --project-ref opjiacaqzljurmyknrlj
-supabase db push
-```
+Simply open [Lovable](https://lovable.dev/projects/4089ed67-2e49-4c72-a430-cd30286a0b70) and click on Share -> Publish.
 
-Add the browser-safe project key to `.env.local`:
+## Can I connect a custom domain to my Lovable project?
 
-```bash
-VITE_SUPABASE_URL=https://opjiacaqzljurmyknrlj.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
-```
+Yes, you can!
 
-Do not put a Supabase secret key or service role key in any `VITE_` variable.
+To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
-## Admin Import
-
-Open the Admin tab in the app. It accepts CSV or JSON for:
-
-- `events`
-- `venues`
-
-Imported rows default to `review` status so they can be checked before publishing.
-
-## Next Build Steps
-
-1. Connect Supabase permissions and apply the initial migration.
-2. Add Supabase Auth and admin role assignment.
-3. Replace local saved-state with authenticated `saved_items` and `user_plans`.
-4. Add real Tencent Maps SDK rendering when `VITE_TENCENT_MAP_KEY` is set.
-5. Expand admin review queue, source matching, verification logs, and publish workflow.
+Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
