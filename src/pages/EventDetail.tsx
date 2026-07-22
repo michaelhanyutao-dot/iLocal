@@ -13,6 +13,7 @@ import {
   Ticket,
 } from 'lucide-react';
 import AppShell from '@/components/AppShell';
+import EventLocationMap from '@/components/EventLocationMap';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -20,6 +21,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useEvent } from '@/hooks/useEvents';
 import { useToast } from '@/hooks/use-toast';
 import { useEventLibrary } from '@/lib/eventLibrary';
+import { buildTencentMapMarkerUrl, buildTencentMapRouteUrl, openExternalUrl } from '@/lib/mapLinks';
 
 const categoryLabels: Record<string, string> = {
   coffee: '咖啡',
@@ -92,6 +94,24 @@ const EventDetail = () => {
       title: planned ? '已加入计划' : '已从计划移除',
       description: `${event.dateLabel ?? event.date} ${event.time} · ${event.title}`,
     });
+  };
+
+  const handleSaved = () => {
+    const saved = library.toggleSaved(event.id);
+    toast({ title: saved ? '已收藏' : '已取消收藏' });
+  };
+
+  const handleLiked = () => {
+    const liked = library.toggleLiked(event.id);
+    toast({ title: liked ? '已标记想去' : '已取消想去' });
+  };
+
+  const handleOpenMapMarker = () => {
+    openExternalUrl(buildTencentMapMarkerUrl(event));
+  };
+
+  const handleOpenRoute = () => {
+    openExternalUrl(buildTencentMapRouteUrl(event));
   };
 
   const isSaved = library.isSaved(event.id);
@@ -171,15 +191,7 @@ const EventDetail = () => {
             ))}
           </div>
 
-          <button
-            type="button"
-            className="grid h-28 w-full place-items-center rounded-2xl border border-border/80 bg-secondary/35 text-center text-primary"
-          >
-            <span className="flex flex-col items-center gap-2 text-base font-black">
-              <MapPin className="h-7 w-7" />
-              在腾讯地图中查看
-            </span>
-          </button>
+          <EventLocationMap event={event} onOpenMap={handleOpenMapMarker} />
         </section>
       </main>
 
@@ -188,13 +200,13 @@ const EventDetail = () => {
           <ActionButton
             label="收藏"
             active={isSaved}
-            onClick={() => library.toggleSaved(event.id)}
+            onClick={handleSaved}
             icon={<Bookmark className="h-6 w-6" fill={isSaved ? 'currentColor' : 'none'} />}
           />
           <ActionButton
             label="喜欢"
             active={isLiked}
-            onClick={() => library.toggleLiked(event.id)}
+            onClick={handleLiked}
             icon={<Heart className="h-6 w-6" fill={isLiked ? 'currentColor' : 'none'} />}
           />
           <ActionButton
@@ -205,7 +217,7 @@ const EventDetail = () => {
           <ActionButton
             label="导航"
             icon={<Navigation className="h-6 w-6" />}
-            onClick={() => toast({ title: '导航功能后续接入腾讯地图' })}
+            onClick={handleOpenRoute}
           />
           <Button
             onClick={handlePlanned}
