@@ -14,6 +14,71 @@ export type Database = {
   }
   public: {
     Tables: {
+      event_import_candidates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          imported_at: string | null
+          imported_event_id: string | null
+          normalized_event: Json
+          notes: string | null
+          quality_score: number | null
+          raw_payload: Json
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source_platform: string
+          source_title: string | null
+          source_url: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          imported_at?: string | null
+          imported_event_id?: string | null
+          normalized_event?: Json
+          notes?: string | null
+          quality_score?: number | null
+          raw_payload?: Json
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_platform?: string
+          source_title?: string | null
+          source_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          imported_at?: string | null
+          imported_event_id?: string | null
+          normalized_event?: Json
+          notes?: string | null
+          quality_score?: number | null
+          raw_payload?: Json
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_platform?: string
+          source_title?: string | null
+          source_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_import_candidates_imported_event_id_fkey"
+            columns: ["imported_event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_user_actions: {
         Row: {
           action: string

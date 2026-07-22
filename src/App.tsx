@@ -16,6 +16,7 @@ import Saved from "./pages/Saved";
 import Admin from "./pages/Admin";
 import AdminEvents from "./pages/AdminEvents";
 import AdminImport from "./pages/AdminImport";
+import AdminIntake from "./pages/AdminIntake";
 import AdminTags from "./pages/AdminTags";
 import NotFound from "./pages/NotFound";
 
@@ -58,6 +59,14 @@ const App = () => (
                 element={
                   <ProtectedRoute requireAdmin={true}>
                     <AdminImport />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/intake"
+                element={
+                  <ProtectedRoute requireAdmin={true}>
+                    <AdminIntake />
                   </ProtectedRoute>
                 }
               />

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,7 +16,8 @@ import {
   Settings,
   Eye,
   Edit,
-  FileSpreadsheet
+  FileSpreadsheet,
+  ClipboardList,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -29,13 +30,10 @@ const Admin = () => {
     activeEvents: 0,
     totalTags: 0,
     totalUsers: 0,
+    pendingCandidates: 0,
   });
 
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       // Fetch events count
       const { count: totalEvents } = await supabase
@@ -61,16 +59,31 @@ const Admin = () => {
         totalUsers = count || 0;
       }
 
+      let pendingCandidates = 0;
+      const { count: candidateCount, error: candidateCountError } = await supabase
+        .from('event_import_candidates')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+
+      if (!candidateCountError) {
+        pendingCandidates = candidateCount || 0;
+      }
+
       setStats({
         totalEvents: totalEvents || 0,
         activeEvents: activeEvents || 0,
         totalTags: totalTags || 0,
         totalUsers,
+        pendingCandidates: pendingCandidates || 0,
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
     }
-  };
+  }, [isAdmin]);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -134,7 +147,7 @@ const Admin = () => {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 gap-6 mb-8 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
           <Card className="bg-gradient-card border-border/50">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">总活动数</CardTitle>
@@ -186,6 +199,19 @@ const Admin = () => {
               </p>
             </CardContent>
           </Card>
+
+          <Card className="bg-gradient-card border-border/50">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">待审核线索</CardTitle>
+              <ClipboardList className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.pendingCandidates}</div>
+              <p className="text-xs text-muted-foreground">
+                采集候选池
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Quick Actions */}
@@ -205,6 +231,25 @@ const Admin = () => {
               <Button className="w-full">
                 <Edit className="w-4 h-4 mr-2" />
                 管理活动
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-card border-border/50 hover:shadow-lg transition-shadow cursor-pointer"
+                onClick={() => navigate('/admin/intake')}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ClipboardList className="w-5 h-5" />
+                采集候选池
+              </CardTitle>
+              <CardDescription>
+                审核从小红书、网页或人工整理来的活动线索
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button className="w-full" variant="outline">
+                <ClipboardList className="w-4 h-4 mr-2" />
+                审核线索
               </Button>
             </CardContent>
           </Card>
