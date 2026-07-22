@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -47,7 +48,8 @@ const Login = () => {
           title: "登录成功",
           description: "欢迎回来！"
         });
-        navigate('/');
+        const postLoginPath = await getPostLoginPath();
+        navigate(postLoginPath);
       }
     } catch (err) {
       toast({
@@ -291,6 +293,26 @@ const Login = () => {
       </div>
     </div>
   );
+};
+
+const getPostLoginPath = async () => {
+  const { data: userResult } = await supabase.auth.getUser();
+  const userId = userResult.user?.id;
+
+  if (!userId) return '/me';
+
+  const { data: roles, error } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error('Error checking post-login role:', error);
+    return '/me';
+  }
+
+  const roleNames = roles?.map((row) => row.role) ?? [];
+  return roleNames.includes('admin') || roleNames.includes('moderator') ? '/admin' : '/me';
 };
 
 export default Login;
