@@ -8,10 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useEvents } from '@/hooks/useEvents';
 import { useEventLibrary } from '@/lib/eventLibrary';
+import type { Event } from '@/types/event';
 
 type SavedView = 'list' | 'calendar';
 type SavedFilter = 'saved' | 'want' | 'planned' | 'past';
 type CalendarMode = 'month' | 'agenda';
+type AgendaPeriod = 'upcoming' | 'history';
 
 const filters: { key: SavedFilter; label: string }[] = [
   { key: 'saved', label: '收藏' },
@@ -32,9 +34,11 @@ const Saved = () => {
   const [view, setView] = useState<SavedView>('list');
   const [filter, setFilter] = useState<SavedFilter>('saved');
   const [calendarMode, setCalendarMode] = useState<CalendarMode>('month');
+  const [agendaPeriod, setAgendaPeriod] = useState<AgendaPeriod>('upcoming');
   const navigate = useNavigate();
   const library = useEventLibrary();
   const { events } = useEvents();
+  const todayKey = useMemo(() => getLocalDateKey(), []);
 
   const eventsByFilter = useMemo(() => {
     const pastCutoff = '2026-07-21';
@@ -51,7 +55,16 @@ const Saved = () => {
   const visibleEvents = eventsByFilter[filter];
   const calendarEvents = eventsByFilter.planned.length > 0 ? eventsByFilter.planned : eventsByFilter.saved;
   const eventDays = new Set(calendarEvents.map((event) => Number(event.date.slice(-2))));
-  const selectedDayEvents = calendarEvents.filter((event) => event.date === '2026-07-21');
+  const selectedDayEvents = calendarEvents.filter((event) => event.date === todayKey);
+  const agendaEvents = useMemo(() => {
+    const sorted = [...calendarEvents].sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
+
+    return {
+      upcoming: sorted.filter((event) => event.date >= todayKey),
+      history: sorted.filter((event) => event.date < todayKey).reverse(),
+    } satisfies Record<AgendaPeriod, Event[]>;
+  }, [calendarEvents, todayKey]);
+  const visibleAgendaEvents = agendaEvents[agendaPeriod];
 
   return (
     <AppShell>
@@ -106,72 +119,80 @@ const Saved = () => {
                 <ModeButton active={calendarMode === 'agenda'} onClick={() => setCalendarMode('agenda')} label="日程" />
               </div>
 
-              <Card className="rounded-2xl border-border/80 bg-card p-4 shadow-none sm:p-5">
-                <div className="mb-5 flex items-center justify-between text-muted-foreground">
-                  <button type="button" className="text-2xl font-black" aria-label="上个月">‹</button>
-                  <h2 className="text-xl font-black text-foreground sm:text-[22px]">Jul 2026</h2>
-                  <button type="button" className="text-2xl font-black" aria-label="下个月">›</button>
-                </div>
+              {calendarMode === 'month' ? (
+                <>
+                  <Card className="rounded-2xl border-border/80 bg-card p-4 shadow-none sm:p-5">
+                    <div className="mb-5 flex items-center justify-between text-muted-foreground">
+                      <button type="button" className="text-2xl font-black" aria-label="上个月">‹</button>
+                      <h2 className="text-xl font-black text-foreground sm:text-[22px]">Jul 2026</h2>
+                      <button type="button" className="text-2xl font-black" aria-label="下个月">›</button>
+                    </div>
 
-                <div className="grid grid-cols-7 gap-y-3 text-center sm:gap-y-3.5">
-                  {['一', '二', '三', '四', '五', '六', '日'].map((day) => (
-                    <div key={day} className="text-sm font-black text-muted-foreground">{day}</div>
-                  ))}
-                  {calendarCells.map((cell, index) => {
-                    const hasEvent = !cell.outside && eventDays.has(cell.day);
-                    const isToday = !cell.outside && cell.day === 21;
-                    return (
-                      <button
-                        key={`${cell.day}-${index}`}
-                        type="button"
-                        className={[
-                          'relative mx-auto grid h-10 w-10 place-items-center rounded-xl text-base font-bold sm:h-11 sm:w-11',
-                          cell.outside ? 'text-muted-foreground/35' : 'text-foreground',
-                          isToday ? 'border-2 border-primary bg-secondary/50 text-primary' : '',
-                        ].join(' ')}
-                      >
-                        {cell.day}
-                        {hasEvent && <span className="absolute bottom-1 h-1.5 w-1.5 rounded-full bg-primary" />}
-                      </button>
-                    );
-                  })}
-                </div>
+                    <div className="grid grid-cols-7 gap-y-3 text-center sm:gap-y-3.5">
+                      {['一', '二', '三', '四', '五', '六', '日'].map((day) => (
+                        <div key={day} className="text-sm font-black text-muted-foreground">{day}</div>
+                      ))}
+                      {calendarCells.map((cell, index) => {
+                        const hasEvent = !cell.outside && eventDays.has(cell.day);
+                        const isToday = !cell.outside && cell.day === Number(todayKey.slice(-2));
+                        return (
+                          <button
+                            key={`${cell.day}-${index}`}
+                            type="button"
+                            className={[
+                              'relative mx-auto grid h-10 w-10 place-items-center rounded-xl text-base font-bold sm:h-11 sm:w-11',
+                              cell.outside ? 'text-muted-foreground/35' : 'text-foreground',
+                              isToday ? 'border-2 border-primary bg-secondary/50 text-primary' : '',
+                            ].join(' ')}
+                          >
+                            {cell.day}
+                            {hasEvent && <span className="absolute bottom-1 h-1.5 w-1.5 rounded-full bg-primary" />}
+                          </button>
+                        );
+                      })}
+                    </div>
 
-                <Button variant="outline" className="mt-5 h-11 w-full rounded-2xl text-sm font-black text-primary sm:h-12">
-                  回到今天
-                </Button>
-              </Card>
+                    <Button variant="outline" className="mt-5 h-11 w-full rounded-2xl text-sm font-black text-primary sm:h-12">
+                      回到今天
+                    </Button>
+                  </Card>
 
-              <div className="space-y-3">
-                <h2 className="text-lg font-black text-muted-foreground">回到今天</h2>
-                {selectedDayEvents.length === 0 ? (
-                  <p className="text-xl font-bold text-muted-foreground">当天没有记录</p>
-                ) : (
-                  selectedDayEvents.map((event) => (
-                    <button
-                      key={event.id}
-                      type="button"
-                      onClick={() => navigate(`/event/${event.id}`)}
-                      className="w-full rounded-2xl border border-border/80 bg-card p-4 text-left shadow-card"
-                    >
-                      <div className="flex items-start gap-3">
-                        <img src={event.coverImage} alt={event.title} className="h-14 w-14 rounded-xl object-cover sm:h-[60px] sm:w-[60px]" />
-                        <div className="min-w-0 flex-1">
-                          <h3 className="truncate text-base font-black text-foreground sm:text-lg">{event.title}</h3>
-                          <p className="mt-1 flex items-center gap-1 text-sm font-semibold text-muted-foreground">
-                            <Clock className="h-4 w-4" />
-                            {event.time}
-                          </p>
-                          <p className="mt-1 flex items-center gap-1 text-sm font-semibold text-muted-foreground">
-                            <MapPin className="h-4 w-4" />
-                            {event.location.district}
-                          </p>
-                        </div>
+                  <div className="space-y-3">
+                    <h2 className="text-lg font-black text-muted-foreground">今天</h2>
+                    {selectedDayEvents.length === 0 ? (
+                      <p className="text-xl font-bold text-muted-foreground">当天没有记录</p>
+                    ) : (
+                      selectedDayEvents.map((event) => (
+                        <AgendaEventRow key={event.id} event={event} onClick={() => navigate(`/event/${event.id}`)} />
+                      ))
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 rounded-2xl bg-secondary/70 p-1.5">
+                    <ModeButton active={agendaPeriod === 'upcoming'} onClick={() => setAgendaPeriod('upcoming')} label="即将到来" />
+                    <ModeButton active={agendaPeriod === 'history'} onClick={() => setAgendaPeriod('history')} label="已经结束" />
+                  </div>
+
+                  {visibleAgendaEvents.length === 0 ? (
+                    <div className="grid min-h-[360px] place-items-center text-center">
+                      <div className="space-y-2">
+                        <p className="text-lg font-black text-muted-foreground">
+                          {agendaPeriod === 'upcoming' ? '暂无即将到来的活动' : '暂无已经结束的活动'}
+                        </p>
+                        <p className="text-sm font-semibold text-muted-foreground/80">加入计划后的活动会出现在这里</p>
                       </div>
-                    </button>
-                  ))
-                )}
-              </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {visibleAgendaEvents.map((event) => (
+                        <AgendaEventRow key={event.id} event={event} onClick={() => navigate(`/event/${event.id}`)} />
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
             </section>
           )}
         </section>
@@ -201,6 +222,29 @@ const ModeButton = ({ active, onClick, icon, label }: ModeButtonProps) => (
   </button>
 );
 
+const AgendaEventRow = ({ event, onClick }: { event: Event; onClick: () => void }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="w-full rounded-2xl border border-border/80 bg-card p-4 text-left shadow-card"
+  >
+    <div className="flex items-start gap-3">
+      <img src={event.coverImage} alt={event.title} className="h-14 w-14 rounded-xl object-cover sm:h-[60px] sm:w-[60px]" />
+      <div className="min-w-0 flex-1">
+        <h3 className="truncate text-base font-black text-foreground sm:text-lg">{event.title}</h3>
+        <p className="mt-1 flex items-center gap-1 text-sm font-semibold text-muted-foreground">
+          <Clock className="h-4 w-4" />
+          {event.dateLabel ?? event.date} {event.time}
+        </p>
+        <p className="mt-1 flex items-center gap-1 text-sm font-semibold text-muted-foreground">
+          <MapPin className="h-4 w-4" />
+          {event.location.district}
+        </p>
+      </div>
+    </div>
+  </button>
+);
+
 const EmptySaved = ({ onDiscover }: { onDiscover: () => void }) => (
   <div className="grid min-h-[440px] place-items-center text-center sm:min-h-[480px]">
     <div className="space-y-4">
@@ -220,5 +264,13 @@ const EmptySaved = ({ onDiscover }: { onDiscover: () => void }) => (
     </div>
   </div>
 );
+
+const getLocalDateKey = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 export default Saved;
