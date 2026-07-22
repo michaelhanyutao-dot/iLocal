@@ -31,35 +31,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isModerator, setIsModerator] = useState(false);
 
   useEffect(() => {
+    const syncSession = async (nextSession: Session | null) => {
+      setLoading(true);
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+
+      if (nextSession?.user) {
+        await checkUserRoles(nextSession.user.id);
+      } else {
+        setIsAdmin(false);
+        setIsModerator(false);
+      }
+
+      setLoading(false);
+    };
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        // Check user roles when session changes
-        if (session?.user) {
-          setTimeout(() => {
-            checkUserRoles(session.user.id);
-          }, 0);
-        } else {
-          setIsAdmin(false);
-          setIsModerator(false);
-        }
+      (_event, session) => {
+        void syncSession(session);
       }
     );
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-      
-      if (session?.user) {
-        setTimeout(() => {
-          checkUserRoles(session.user.id);
-        }, 0);
-      }
+      void syncSession(session);
     });
 
     return () => subscription.unsubscribe();
@@ -74,6 +70,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('Error fetching user roles:', error);
+        setIsAdmin(false);
+        setIsModerator(false);
         return;
       }
 
@@ -82,6 +80,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsModerator(userRoles.includes('moderator') || userRoles.includes('admin'));
     } catch (error) {
       console.error('Error in checkUserRoles:', error);
+      setIsAdmin(false);
+      setIsModerator(false);
     }
   };
 
