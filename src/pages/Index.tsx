@@ -201,7 +201,7 @@ const Index = () => {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-2 items-start gap-3 sm:grid-cols-3 sm:gap-4">
+            <div className="grid grid-cols-2 items-start gap-3 sm:gap-4">
               {filteredEvents.map((event) => (
                 <EventCard
                   key={event.id}
