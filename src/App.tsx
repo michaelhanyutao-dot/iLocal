@@ -9,6 +9,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import CreateEvent from "./pages/CreateEvent";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import Login from "./pages/Login";
 import Profile from "./pages/Profile";
 import EventDetail from "./pages/EventDetail";
@@ -37,12 +38,13 @@ const App = () => (
               <Route path="/saved" element={<Saved />} />
               <Route path="/login" element={<Login />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/me" element={<Profile />} />
               <Route path="/create-event" element={<CreateEvent />} />
               <Route 
                 path="/admin" 
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requireAdmin>
                     <Admin />
                   </ProtectedRoute>
                 } 
@@ -50,7 +52,7 @@ const App = () => (
               <Route
                 path="/dashboard"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requireAdmin>
                     <Admin />
                   </ProtectedRoute>
                 }
@@ -58,7 +60,7 @@ const App = () => (
               <Route 
                 path="/admin/events" 
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requireAdmin>
                     <AdminEvents />
                   </ProtectedRoute>
                 } 
@@ -66,7 +68,7 @@ const App = () => (
               <Route
                 path="/admin/events/new"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requireAdmin>
                     <AdminEvents />
                   </ProtectedRoute>
                 }
@@ -74,7 +76,7 @@ const App = () => (
               <Route
                 path="/dashboard/events"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requireAdmin>
                     <AdminEvents />
                   </ProtectedRoute>
                 }
@@ -82,7 +84,7 @@ const App = () => (
               <Route
                 path="/dashboard/events/new"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requireAdmin>
                     <AdminEvents />
                   </ProtectedRoute>
                 }
@@ -90,7 +92,7 @@ const App = () => (
               <Route
                 path="/admin/import"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requireAdmin>
                     <AdminImport />
                   </ProtectedRoute>
                 }
@@ -98,7 +100,7 @@ const App = () => (
               <Route
                 path="/dashboard/import"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requireAdmin>
                     <AdminImport />
                   </ProtectedRoute>
                 }
@@ -106,7 +108,7 @@ const App = () => (
               <Route
                 path="/admin/intake"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requireAdmin>
                     <AdminIntake />
                   </ProtectedRoute>
                 }
@@ -114,7 +116,7 @@ const App = () => (
               <Route
                 path="/dashboard/intake"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requireAdmin>
                     <AdminIntake />
                   </ProtectedRoute>
                 }
@@ -122,7 +124,7 @@ const App = () => (
               <Route
                 path="/admin/tags" 
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requireAdmin>
                     <AdminTags />
                   </ProtectedRoute>
                 } 
@@ -130,7 +132,7 @@ const App = () => (
               <Route
                 path="/dashboard/tags"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requireAdmin>
                     <AdminTags />
                   </ProtectedRoute>
                 }
@@ -138,7 +140,7 @@ const App = () => (
               <Route
                 path="/admin/users"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requireAdmin>
                     <AdminUsers />
                   </ProtectedRoute>
                 }
@@ -146,7 +148,7 @@ const App = () => (
               <Route
                 path="/dashboard/users"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requireAdmin>
                     <AdminUsers />
                   </ProtectedRoute>
                 }

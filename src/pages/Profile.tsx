@@ -1,13 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import type { ReactNode } from 'react';
-import { Bookmark, CalendarClock, ChevronRight, LogIn, LogOut, ShieldCheck, UserRound } from 'lucide-react';
+import { Bookmark, CalendarClock, ChevronRight, LogIn, LogOut, UserRound } from 'lucide-react';
 import AppShell from '@/components/AppShell';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
 const Profile = () => {
-  const { user, loading, signOut, isAdmin, isModerator } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -71,13 +71,6 @@ const Profile = () => {
             label="收藏与到访"
             onClick={() => navigate('/saved')}
           />
-          {isLoggedIn && (
-            <ProfileRow
-              icon={<ShieldCheck className="h-5 w-5" />}
-              label={isAdmin || isModerator ? '运营后台' : '运营后台'}
-              onClick={() => navigate('/dashboard')}
-            />
-          )}
         </section>
 
         {isLoggedIn && (

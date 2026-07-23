@@ -57,8 +57,8 @@ const Admin = () => {
       let totalUsers = 0;
       if (isAdmin) {
         const { count } = await supabase
-          .from('user_roles')
-          .select('*', { count: 'exact' });
+          .from('app_user_profiles')
+          .select('*', { count: 'exact', head: true });
         totalUsers = count || 0;
       }
 
@@ -315,7 +315,7 @@ const Admin = () => {
                   用户管理
                 </CardTitle>
                 <CardDescription>
-                  管理用户权限和角色分配
+                  管理账号状态、密码重置和角色分配
                 </CardDescription>
               </CardHeader>
               <CardContent>

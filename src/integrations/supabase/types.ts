@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_user_profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          email: string | null
+          last_sign_in_at: string | null
+          notes: string | null
+          status: string
+          status_updated_at: string | null
+          status_updated_by: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          last_sign_in_at?: string | null
+          notes?: string | null
+          status?: string
+          status_updated_at?: string | null
+          status_updated_by?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          last_sign_in_at?: string | null
+          notes?: string | null
+          status?: string
+          status_updated_at?: string | null
+          status_updated_by?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       event_import_candidates: {
         Row: {
           created_at: string

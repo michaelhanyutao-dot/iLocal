@@ -11,7 +11,7 @@ This is the working checklist for running the current iLocal MVP.
 - Intake queue: `/dashboard/intake`
 - CSV import: `/dashboard/import`
 - Tag management: `/dashboard/tags`
-- Role management: `/dashboard/users`
+- User management: `/dashboard/users`
 
 ## Required Environment Variables
 
@@ -34,6 +34,12 @@ The cover upload feature specifically requires:
 
 It creates the public `event-covers` Storage bucket and RLS policies. Without this migration, the dashboard still works, but image uploads will fail and operators must paste image URLs manually.
 
+User management specifically requires:
+
+- `supabase/migrations/20260723183000_app_user_profiles.sql`
+
+It creates `app_user_profiles`, syncs Auth users into an operations-facing user ledger, and stores app-level account status (`active` or `suspended`). Without this migration, `/dashboard/users` cannot show the account list.
+
 ## First Admin Setup
 
 The first admin still needs one SQL insert because the role manager itself is protected by `user_roles`.
@@ -48,7 +54,15 @@ values ('PASTE_AUTH_USER_UUID_HERE', 'admin')
 on conflict (user_id, role) do nothing;
 ```
 
-After that, use `/dashboard/users` to add moderators or additional admins.
+After that, use `/dashboard/users` to add moderators or additional admins, send password reset emails, and suspend/reactivate app accounts.
+
+## User Management Rules
+
+- The public Profile page does not expose the dashboard entry; operators should open `/dashboard` or `/dashboard/users` directly.
+- Passwords are never shown, stored, or manually edited in the frontend.
+- Use `重置密码` in `/dashboard/users` to send a Supabase recovery email. The user sets a new password at `/reset-password`.
+- `禁用账号` changes app-level status to `suspended`. The frontend blocks suspended accounts after session sync, but strict server-side enforcement for every future privileged operation should stay in RLS or Edge Functions.
+- Creating, deleting, or force-changing Supabase Auth users requires a backend service role flow, preferably a Supabase Edge Function. Do not add a service role key to Vercel client environment variables.
 
 ## Daily Content Workflow
 
@@ -111,7 +125,8 @@ Before promoting a batch:
 - Event detail page shows the correct title, image, time, price, address, and Tencent map entry.
 - Save, like, share, navigation, and plan buttons respond.
 - Saved calendar shows planned events under the correct date.
-- `/me` shows guest state when logged out and operator state when logged in.
+- `/me` shows guest/user state without an operations dashboard entry.
+- `/dashboard/users` shows account list, roles, active/suspended status, reset email action, and notes.
 
 ## Deployment Workflow
 
@@ -122,8 +137,7 @@ Before promoting a batch:
 
 ## Near-Term Roadmap
 
-- Add a proper image upload/storage workflow.
-- Add duplicate detection in the intake queue.
 - Add source confidence and editorial notes.
 - Add a lightweight submission form for partners.
 - Add scheduled sourcing jobs once the manual intake workflow is stable.
+- Add service-role Edge Functions for admin-only Auth user creation, deletion, and forced session revocation.

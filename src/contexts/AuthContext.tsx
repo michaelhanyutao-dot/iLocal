@@ -6,6 +6,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  accountStatus: 'active' | 'suspended' | null;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signUp: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
@@ -29,6 +30,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isModerator, setIsModerator] = useState(false);
+  const [accountStatus, setAccountStatus] = useState<'active' | 'suspended' | null>(null);
 
   useEffect(() => {
     const syncSession = async (nextSession: Session | null) => {
@@ -37,10 +39,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(nextSession?.user ?? null);
 
       if (nextSession?.user) {
+        const isSuspended = await checkAccountStatus(nextSession.user.id);
+        if (isSuspended) {
+          setIsAdmin(false);
+          setIsModerator(false);
+          setSession(null);
+          setUser(null);
+          await supabase.auth.signOut();
+          setLoading(false);
+          return;
+        }
+
         await checkUserRoles(nextSession.user.id);
       } else {
         setIsAdmin(false);
         setIsModerator(false);
+        setAccountStatus(null);
       }
 
       setLoading(false);
@@ -60,6 +74,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const checkAccountStatus = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('app_user_profiles')
+        .select('status')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching account status:', error);
+        setAccountStatus('active');
+        return false;
+      }
+
+      const nextStatus = data?.status === 'suspended' ? 'suspended' : 'active';
+      setAccountStatus(nextStatus);
+      return nextStatus === 'suspended';
+    } catch (error) {
+      console.error('Error in checkAccountStatus:', error);
+      setAccountStatus('active');
+      return false;
+    }
+  };
 
   const checkUserRoles = async (userId: string) => {
     try {
@@ -110,12 +148,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await supabase.auth.signOut();
     setIsAdmin(false);
     setIsModerator(false);
+    setAccountStatus(null);
   };
 
   const value = {
     user,
     session,
     loading,
+    accountStatus,
     signIn,
     signUp,
     signOut,
