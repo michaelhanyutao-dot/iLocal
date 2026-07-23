@@ -57,6 +57,13 @@ const Index = () => {
     return filtered;
   }, [events, searchQuery, selectedCategories]);
 
+  useEffect(() => {
+    setSelectedEvent((current) => {
+      if (!current) return filteredEvents[0] ?? null;
+      return filteredEvents.some((event) => event.id === current.id) ? current : filteredEvents[0] ?? null;
+    });
+  }, [filteredEvents]);
+
   const handleCategoryToggle = (category: EventCategory) => {
     setSelectedCategories(prev =>
       prev.includes(category)
@@ -84,6 +91,11 @@ const Index = () => {
     }
   };
 
+  const clearFilters = () => {
+    setSearchQuery('');
+    setSelectedCategories([]);
+  };
+
   return (
     <AppShell>
       <main className="ilocal-page ilocal-page-padding min-h-screen pb-8 pt-6 sm:pb-10 sm:pt-8">
@@ -109,7 +121,7 @@ const Index = () => {
           </div>
 
           <div className="flex">
-            <SearchBar onSearch={setSearchQuery} placeholder="搜索活动、地点或主办方" />
+            <SearchBar value={searchQuery} onSearch={setSearchQuery} placeholder="搜索活动、地点或主办方" />
           </div>
 
           <FilterBar
@@ -126,7 +138,22 @@ const Index = () => {
         </header>
 
         <section className="mt-5 sm:mt-6">
-          {viewMode === 'map' ? (
+          {filteredEvents.length === 0 ? (
+            <Card className="grid min-h-[360px] place-items-center rounded-2xl border-border/80 bg-card p-6 text-center shadow-none">
+              <div className="space-y-4">
+                <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-secondary/70 text-primary">
+                  <AlertCircle className="h-7 w-7" />
+                </div>
+                <div className="space-y-2">
+                  <h2 className="text-xl font-black text-foreground">没有找到匹配活动</h2>
+                  <p className="text-sm font-semibold text-muted-foreground">换个关键词，或清除分类筛选后再试。</p>
+                </div>
+                <Button variant="outline" onClick={clearFilters}>
+                  清除筛选
+                </Button>
+              </div>
+            </Card>
+          ) : viewMode === 'map' ? (
             <div className="relative">
               <Card className="overflow-hidden rounded-2xl border-border/80 bg-card p-0">
                 <div className="h-[calc(100svh-286px)] min-h-[400px] max-h-[560px] sm:h-[520px]">

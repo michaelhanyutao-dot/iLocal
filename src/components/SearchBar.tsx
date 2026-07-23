@@ -1,18 +1,30 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Search, X } from 'lucide-react';
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
   placeholder?: string;
+  value?: string;
 }
 
-const SearchBar = ({ onSearch, placeholder = "搜索活动、地点或主办方..." }: SearchBarProps) => {
-  const [query, setQuery] = useState('');
+const SearchBar = ({ onSearch, placeholder = "搜索活动、地点或主办方...", value }: SearchBarProps) => {
+  const [query, setQuery] = useState(value ?? '');
+
+  useEffect(() => {
+    if (value !== undefined) {
+      setQuery(value);
+    }
+  }, [value]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSearch(query);
+  };
+
+  const handleChange = (nextQuery: string) => {
+    setQuery(nextQuery);
+    onSearch(nextQuery);
   };
 
   const handleClear = () => {
@@ -28,7 +40,7 @@ const SearchBar = ({ onSearch, placeholder = "搜索活动、地点或主办方.
           type="text"
           placeholder={placeholder}
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => handleChange(e.target.value)}
           className="h-12 rounded-2xl border-transparent bg-secondary/55 pl-11 pr-10 text-[15px] font-semibold placeholder:text-muted-foreground focus:bg-secondary/70 sm:h-[50px] sm:text-base"
         />
         {query && (
