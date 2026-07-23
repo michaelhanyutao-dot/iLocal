@@ -6,14 +6,14 @@ import { Button } from '@/components/ui/button';
 import type { Event, EventCategory, UserLocation } from '@/types/event';
 
 const BEIJING: UserLocation = { lat: 39.9042, lng: 116.4074 };
-const CATEGORY_MARKERS: Record<EventCategory, { icon: string; color: string }> = {
-  coffee: { icon: '☕', color: '#8A6B4F' },
-  music: { icon: '🎵', color: '#B75B7A' },
-  market: { icon: '🛍️', color: '#D48639' },
-  party: { icon: '🥂', color: '#9B78BE' },
-  exhibition: { icon: '🖼️', color: '#5F8D78' },
-  bar: { icon: '🍷', color: '#9E4E64' },
-  sports: { icon: '🏃', color: '#718E4F' },
+const CATEGORY_MARKERS: Record<EventCategory, { color: string }> = {
+  coffee: { color: '#8A6B4F' },
+  music: { color: '#B75B7A' },
+  market: { color: '#D48639' },
+  party: { color: '#9B78BE' },
+  exhibition: { color: '#5F8D78' },
+  bar: { color: '#9E4E64' },
+  sports: { color: '#718E4F' },
 };
 const USER_MARKER_ICON =
   'data:image/svg+xml;charset=UTF-8,' +
@@ -25,6 +25,27 @@ const USER_MARKER_ICON =
     </svg>
   `);
 
+const getCategoryIconSvg = (category: EventCategory) => {
+  switch (category) {
+    case 'coffee':
+      return '<path d="M8 11h9v5.5A4.5 4.5 0 0 1 12.5 21A4.5 4.5 0 0 1 8 16.5V11Z"/><path d="M17 12h1.2a3 3 0 0 1 0 6H17"/><path d="M10 8v-2M13 8v-2M16 8v-2"/>';
+    case 'music':
+      return '<path d="M10 19a2.5 2.5 0 1 1-2-2.45V7l10-2v9.5"/><path d="M18 17a2.5 2.5 0 1 1-2-2.45"/><path d="M10 10l8-1.6"/>';
+    case 'market':
+      return '<path d="M7 10h14l-1.2 10H8.2L7 10Z"/><path d="M10 10a4 4 0 0 1 8 0"/><path d="M11 14v.1M17 14v.1"/>';
+    case 'party':
+      return '<path d="M9 7l3 6a3 3 0 1 1-5.4 0L9 7Z"/><path d="M15 7l3 6a3 3 0 1 1-5.4 0L15 7Z"/><path d="M8 21h4M14 21h4"/>';
+    case 'exhibition':
+      return '<path d="M6 7h16v14H6V7Z"/><path d="M9 18l3.4-4 2.2 2.5 2.2-3L20 18"/><path d="M10 10h.1"/>';
+    case 'bar':
+      return '<path d="M8 6h12l-2 6a5 5 0 0 1-8 0L8 6Z"/><path d="M14 16v5"/><path d="M10 21h8"/><path d="M9 10h10"/>';
+    case 'sports':
+      return '<circle cx="14" cy="14" r="7"/><path d="M9 10c3 2 7 2 10 0"/><path d="M9 18c3-2 7-2 10 0"/><path d="M14 7c-2 3-2 11 0 14"/><path d="M14 7c2 3 2 11 0 14"/>';
+    default:
+      return '<path d="M12 6v12M6 12h12"/>';
+  }
+};
+
 const createCategoryMarkerIcon = (category: EventCategory, selected = false) => {
   const marker = CATEGORY_MARKERS[category];
   const size = selected ? 50 : 42;
@@ -32,8 +53,8 @@ const createCategoryMarkerIcon = (category: EventCategory, selected = false) => 
   const circleRadius = selected ? 19 : 16;
   const pointTop = selected ? 34 : 29;
   const pointBottom = selected ? 48 : 40;
-  const emojiSize = selected ? 21 : 18;
   const shadowOpacity = selected ? 0.28 : 0.2;
+  const iconScale = selected ? 1.02 : 0.92;
 
   return (
     'data:image/svg+xml;charset=UTF-8,' +
@@ -42,7 +63,9 @@ const createCategoryMarkerIcon = (category: EventCategory, selected = false) => 
         <ellipse cx="${center}" cy="${pointBottom - 2}" rx="${selected ? 12 : 9}" ry="${selected ? 3.8 : 3}" fill="#1F241A" opacity="${shadowOpacity}"/>
         <path d="M${center} ${pointBottom} C${center - 5.5} ${pointTop} ${center - circleRadius} ${pointTop - 6} ${center - circleRadius} ${center} C${center - circleRadius} ${center - circleRadius} ${center - circleRadius / 2} ${center - circleRadius} ${center} ${center - circleRadius} C${center + circleRadius / 2} ${center - circleRadius} ${center + circleRadius} ${center - circleRadius} ${center + circleRadius} ${center} C${center + circleRadius} ${pointTop - 6} ${center + 5.5} ${pointTop} ${center} ${pointBottom}Z" fill="${marker.color}"/>
         <circle cx="${center}" cy="${center}" r="${circleRadius - 2}" fill="white" opacity="0.96"/>
-        <text x="${center}" y="${center + emojiSize * 0.34}" text-anchor="middle" font-size="${emojiSize}" font-family="Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif">${marker.icon}</text>
+        <g transform="translate(${center - 12 * iconScale} ${center - 12 * iconScale}) scale(${iconScale})" stroke="${marker.color}" stroke-width="${selected ? 2.45 : 2.25}" stroke-linecap="round" stroke-linejoin="round" fill="none">
+          ${getCategoryIconSvg(category)}
+        </g>
       </svg>
     `)
   );
@@ -216,12 +239,18 @@ const EventMap = ({
         <Navigation className="h-5 w-5 -rotate-45" strokeWidth={2.7} />
       </div>
       <Button
+        type="button"
         variant="outline"
         size="icon"
-        onClick={onLocationRequest}
+        onPointerDown={(event) => event.stopPropagation()}
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onLocationRequest();
+        }}
         disabled={locationLoading}
         className={[
-          'absolute right-3 z-10 h-12 w-12 rounded-full border-border/80 bg-card/95 text-primary shadow-float backdrop-blur hover:bg-card sm:right-4',
+          'pointer-events-auto absolute right-3 z-30 h-12 w-12 touch-manipulation rounded-full border-border/80 bg-card/95 text-primary shadow-float backdrop-blur hover:bg-card sm:right-4',
           selectedEvent ? 'bottom-[104px]' : 'bottom-4',
         ].join(' ')}
         aria-label="定位当前位置"

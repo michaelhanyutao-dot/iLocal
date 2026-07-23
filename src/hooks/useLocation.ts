@@ -40,9 +40,9 @@ export const useLocation = () => {
         setLoading(false);
       },
       {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 300000 // 5 minutes
+        enableHighAccuracy: false,
+        timeout: 8000,
+        maximumAge: 60000
       }
     );
   };

@@ -81,6 +81,10 @@ const Index = () => {
   };
 
   const handleLocationRequest = () => {
+    toast({
+      title: '正在获取当前位置',
+      description: '如果浏览器或小程序弹出权限提示，请选择允许定位。',
+    });
     requestLocation();
   };
 
