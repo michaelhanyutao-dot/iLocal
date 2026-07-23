@@ -49,11 +49,13 @@ export default {
           foreground: "hsl(var(--card-foreground))",
         },
         // Event category colors
+        coffee: "hsl(var(--coffee))",
         music: "hsl(var(--music))",
         market: "hsl(var(--market))",
         party: "hsl(var(--party))",
         exhibition: "hsl(var(--exhibition))",
         bar: "hsl(var(--bar))",
+        sports: "hsl(var(--sports))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",

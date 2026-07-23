@@ -12,18 +12,44 @@ const CATEGORY_EMOJIS: Record<EventCategory, string> = {
   market: '🛍️',
   party: '🥂',
   exhibition: '🖼️',
-  bar: '🍷',
+  bar: '🎧',
   sports: '🏃',
+};
+const CATEGORY_MARKER_COLORS: Record<EventCategory, string> = {
+  coffee: '#D6AA82',
+  music: '#B794F6',
+  market: '#68D391',
+  party: '#F6AD55',
+  exhibition: '#63B3ED',
+  bar: '#FC8181',
+  sports: '#93A8F3',
 };
 const USER_MARKER_ICON =
   'data:image/svg+xml;charset=UTF-8,' +
   encodeURIComponent(`
     <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="22" cy="22" r="21" fill="white" stroke="#7D9255" stroke-width="2"/>
-      <circle cx="22" cy="15" r="5.2" fill="#7D9255"/>
-      <path d="M11.8 34.2c1.8-6 5.4-9 10.2-9s8.4 3 10.2 9" stroke="#7D9255" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="22" cy="22" r="21" fill="white" stroke="#C7A6DD" stroke-width="2"/>
+      <circle cx="22" cy="15" r="5.2" fill="#C7A6DD"/>
+      <path d="M11.8 34.2c1.8-6 5.4-9 10.2-9s8.4 3 10.2 9" stroke="#C7A6DD" stroke-width="4" stroke-linecap="round"/>
     </svg>
   `);
+
+const createCategoryCircleIcon = (category: EventCategory, selected = false) => {
+  const size = selected ? 40 : 32;
+  const center = size / 2;
+  const radius = selected ? 17 : 14;
+  const shadowOpacity = selected ? 0.28 : 0.18;
+
+  return (
+    'data:image/svg+xml;charset=UTF-8,' +
+    encodeURIComponent(`
+      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="${center}" cy="${center + 1}" r="${radius}" fill="#45384D" opacity="${shadowOpacity}"/>
+        <circle cx="${center}" cy="${center}" r="${radius}" fill="${CATEGORY_MARKER_COLORS[category]}" stroke="white" stroke-width="${selected ? 3 : 2}"/>
+      </svg>
+    `)
+  );
+};
 
 interface EventMapProps {
   events: Event[];
@@ -46,6 +72,7 @@ const EventMap = ({
 }: EventMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<TMapMap | null>(null);
+  const eventMarkerLayerRef = useRef<TMapMarkerLayer | null>(null);
   const eventLabelLayerRef = useRef<TMapOverlayLayer | null>(null);
   const userMarkerLayerRef = useRef<TMapMarkerLayer | null>(null);
   const eventLookupRef = useRef<Record<string, Event>>({});
@@ -76,6 +103,8 @@ const EventMap = ({
 
     return () => {
       cancelled = true;
+      eventMarkerLayerRef.current?.setMap(null);
+      eventMarkerLayerRef.current = null;
       eventLabelLayerRef.current?.setMap(null);
       eventLabelLayerRef.current = null;
       userMarkerLayerRef.current?.setMap(null);
@@ -90,6 +119,8 @@ const EventMap = ({
 
     eventLabelLayerRef.current?.setMap(null);
     eventLabelLayerRef.current = null;
+    eventMarkerLayerRef.current?.setMap(null);
+    eventMarkerLayerRef.current = null;
     eventLookupRef.current = Object.fromEntries(events.map((event) => [event.id, event]));
 
     try {
@@ -98,27 +129,58 @@ const EventMap = ({
       }
       const { LabelStyle, MultiLabel } = window.TMap;
 
+      const markerStyles = Object.keys(CATEGORY_MARKER_COLORS).reduce<Record<string, unknown>>((styles, category) => {
+        const eventCategory = category as EventCategory;
+        styles[eventCategory] = new window.TMap!.MarkerStyle({
+          width: 32,
+          height: 32,
+          anchor: { x: 16, y: 16 },
+          src: createCategoryCircleIcon(eventCategory),
+        });
+        styles[`${eventCategory}-selected`] = new window.TMap!.MarkerStyle({
+          width: 40,
+          height: 40,
+          anchor: { x: 20, y: 20 },
+          src: createCategoryCircleIcon(eventCategory, true),
+        });
+        return styles;
+      }, {});
+
       const labelStyles = Object.keys(CATEGORY_EMOJIS).reduce<Record<string, unknown>>((styles, category) => {
         styles[category] = new LabelStyle({
-          size: 26,
-          color: '#1F241A',
-          strokeColor: '#FFFFFF',
-          strokeWidth: 4,
+          size: 16,
+          color: '#FFFFFF',
+          strokeColor: 'rgba(0,0,0,0)',
+          strokeWidth: 0,
           alignment: 'center',
           verticalAlignment: 'middle',
           offset: { x: 0, y: 0 },
         });
         styles[`${category}-selected`] = new LabelStyle({
-          size: 34,
-          color: '#1F241A',
-          strokeColor: '#FFFFFF',
-          strokeWidth: 5,
+          size: 19,
+          color: '#FFFFFF',
+          strokeColor: 'rgba(0,0,0,0)',
+          strokeWidth: 0,
           alignment: 'center',
           verticalAlignment: 'middle',
           offset: { x: 0, y: 0 },
         });
         return styles;
       }, {});
+
+      eventMarkerLayerRef.current = new window.TMap.MultiMarker({
+        id: 'ilocal-event-marker-circles',
+        map: mapInstanceRef.current,
+        styles: markerStyles,
+        geometries: events.map((event) => ({
+          id: event.id,
+          styleId: event.id === selectedEvent?.id ? `${event.category}-selected` : event.category,
+          position: new window.TMap.LatLng(event.location.lat, event.location.lng),
+          properties: {
+            title: event.title,
+          },
+        })),
+      });
 
       eventLabelLayerRef.current = new MultiLabel({
         id: 'ilocal-event-emoji-labels',
@@ -133,6 +195,12 @@ const EventMap = ({
             title: event.title,
           },
         })),
+      });
+
+      eventMarkerLayerRef.current.on('click', (markerEvent) => {
+        const eventId = markerEvent.geometry?.id ?? markerEvent.cluster?.geometry?.id;
+        const event = eventId ? eventLookupRef.current[eventId] : null;
+        if (event) onEventSelect(event);
       });
 
       eventLabelLayerRef.current.on('click', (markerEvent) => {

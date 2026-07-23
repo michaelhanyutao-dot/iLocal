@@ -17,9 +17,18 @@ const EventCard = ({ event, distance, onClick, isSaved, onToggleSaved, className
     music: '音乐',
     market: '市集',
     party: '派对',
-    exhibition: '活动',
+    exhibition: '展览',
     bar: '酒吧',
     sports: '运动',
+  }[event.category];
+  const categoryTone = {
+    coffee: 'bg-coffee',
+    music: 'bg-music',
+    market: 'bg-market',
+    party: 'bg-party',
+    exhibition: 'bg-exhibition',
+    bar: 'bg-bar',
+    sports: 'bg-sports',
   }[event.category];
   const isTall = event.id === '2' || event.id === '5';
 
@@ -37,7 +46,7 @@ const EventCard = ({ event, distance, onClick, isSaved, onToggleSaved, className
           alt={event.title}
           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
         />
-        <span className="absolute left-2.5 top-2.5 rounded-full bg-primary px-2.5 py-1 text-xs font-bold text-primary-foreground shadow-sm sm:left-3 sm:top-3 sm:text-sm">
+        <span className={`absolute left-2.5 top-2.5 rounded-full px-2.5 py-1 text-xs font-bold text-white shadow-sm sm:left-3 sm:top-3 sm:text-sm ${categoryTone}`}>
           {categoryLabel}
         </span>
         <button
