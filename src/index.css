@@ -183,4 +183,8 @@ All colors MUST be HSL.
   .scrollbar-hide::-webkit-scrollbar {
     display: none; /* Chrome, Safari and Opera */
   }
+
+  .ilocal-tencent-map :is(.tmap-zoom-control, .tmap-scale-control, .tmap-rotate-control, .tmap-compass-control) {
+    display: none !important;
+  }
 }

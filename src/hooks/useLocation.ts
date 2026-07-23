@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { UserLocation } from '@/types/event';
 
 export const useLocation = () => {
@@ -46,11 +46,6 @@ export const useLocation = () => {
       }
     );
   };
-
-  useEffect(() => {
-    // Auto-request location on mount
-    requestLocation();
-  }, []);
 
   return {
     location,

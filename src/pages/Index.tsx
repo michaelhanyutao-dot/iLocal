@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, Compass, LocateFixed, Send } from 'lucide-react';
+import { AlertCircle, Compass, Send } from 'lucide-react';
 import AppShell from '@/components/AppShell';
 import EventCard from '@/components/EventCard';
 import EventMap from '@/components/EventMap';
@@ -18,7 +18,7 @@ import { Event, EventCategory } from '@/types/event';
 
 const Index = () => {
   const { events, loading: eventsLoading, usingFallback, error: eventsError } = useEvents();
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(events[0] ?? null);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<EventCategory[]>([]);
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
@@ -31,8 +31,8 @@ const Index = () => {
 
   useEffect(() => {
     setSelectedEvent((current) => {
-      if (!current) return events[0] ?? null;
-      return events.some((event) => event.id === current.id) ? current : events[0] ?? null;
+      if (!current) return null;
+      return events.some((event) => event.id === current.id) ? current : null;
     });
   }, [events]);
 
@@ -59,8 +59,8 @@ const Index = () => {
 
   useEffect(() => {
     setSelectedEvent((current) => {
-      if (!current) return filteredEvents[0] ?? null;
-      return filteredEvents.some((event) => event.id === current.id) ? current : filteredEvents[0] ?? null;
+      if (!current) return null;
+      return filteredEvents.some((event) => event.id === current.id) ? current : null;
     });
   }, [filteredEvents]);
 
@@ -82,14 +82,16 @@ const Index = () => {
 
   const handleLocationRequest = () => {
     requestLocation();
-    if (locationError) {
-      toast({
-        title: '位置权限',
-        description: '请在浏览器设置中允许位置访问以获得更好的体验',
-        variant: 'destructive',
-      });
-    }
   };
+
+  useEffect(() => {
+    if (!locationError) return;
+    toast({
+      title: '无法定位当前位置',
+      description: '请在浏览器或小程序设置中允许定位权限，然后再试一次。',
+      variant: 'destructive',
+    });
+  }, [locationError, toast]);
 
   const clearFilters = () => {
     setSearchQuery('');
@@ -162,6 +164,9 @@ const Index = () => {
                     userLocation={location}
                     selectedEvent={selectedEvent}
                     onEventSelect={handleEventSelect}
+                    onLocationRequest={handleLocationRequest}
+                    locationLoading={locationLoading}
+                    locationError={locationError}
                   />
                 </div>
               </Card>
@@ -170,20 +175,6 @@ const Index = () => {
                   正在加载活动...
                 </div>
               )}
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleLocationRequest}
-                disabled={locationLoading}
-                className="absolute right-3 top-3 h-11 w-11 rounded-full bg-card shadow-md sm:right-4 sm:top-4"
-                aria-label="当前位置"
-              >
-                {locationError ? (
-                  <AlertCircle className="h-6 w-6 text-destructive" />
-                ) : (
-                  <LocateFixed className="h-6 w-6 text-primary" />
-                )}
-              </Button>
               {selectedEvent && (
                 <button
                   type="button"
