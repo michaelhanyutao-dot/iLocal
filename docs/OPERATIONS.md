@@ -24,6 +24,16 @@ Set these in Vercel for Production and Preview:
 
 After changing environment variables, redeploy the latest commit in Vercel.
 
+## Required Supabase Migrations
+
+Run every file in `supabase/migrations` that has not yet been applied to the current Supabase project.
+
+The cover upload feature specifically requires:
+
+- `supabase/migrations/20260723093000_event_cover_storage.sql`
+
+It creates the public `event-covers` Storage bucket and RLS policies. Without this migration, the dashboard still works, but image uploads will fail and operators must paste image URLs manually.
+
 ## First Admin Setup
 
 The first admin still needs one SQL insert because the role manager itself is protected by `user_roles`.
@@ -81,7 +91,16 @@ After that, use `/dashboard/users` to add moderators or additional admins.
 - Latitude and longitude should point to the actual venue, not just the district.
 - Use `draft` when the source is incomplete, `active` when ready to publish, and `inactive` to take an event down.
 - Prefer official ticket or venue links for `ticket_url`.
-- Use a real event or venue image URL for `cover_image`; if empty, the app falls back to category artwork.
+- Upload a cover image in `/dashboard/events/new`, or paste a real event/venue image URL into `cover_image`; if empty, the app falls back to category artwork.
+
+## Duplicate Checks
+
+The intake queue warns and blocks publishing when it finds an existing formal event with:
+
+- the same normalized title and same date, or
+- the same normalized address, same date, and same time.
+
+If the warning is a false positive, edit the candidate's title, date, time, or address before publishing.
 
 ## Public QA Checklist
 

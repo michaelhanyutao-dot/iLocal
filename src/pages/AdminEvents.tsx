@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Database } from '@/integrations/supabase/types';
 import { getAdminBasePath } from '@/lib/adminNavigation';
+import { uploadEventCover } from '@/lib/eventCoverStorage';
 import { eventFormSchema, formatZodErrors } from '@/lib/validation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +40,7 @@ import {
   Clock,
   Users,
   Search,
+  Upload,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -103,6 +105,7 @@ const AdminEvents = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | Event['status']>('all');
   const [categoryFilter, setCategoryFilter] = useState<'all' | string>('all');
+  const [coverUploading, setCoverUploading] = useState(false);
   const [formData, setFormData] = useState(defaultEventFormData);
 
   const categoryOptions = [
@@ -194,6 +197,29 @@ const AdminEvents = () => {
       status: event.status as 'active' | 'inactive' | 'draft'
     });
     setIsDialogOpen(true);
+  };
+
+  const handleCoverUpload = async (file?: File) => {
+    if (!file) return;
+
+    setCoverUploading(true);
+    try {
+      const publicUrl = await uploadEventCover(file, user?.id);
+      setFormData((prev) => ({ ...prev, cover_image: publicUrl }));
+      toast({
+        title: '封面已上传',
+        description: '图片 URL 已自动填入表单',
+      });
+    } catch (error) {
+      console.error('Cover upload failed:', error);
+      toast({
+        title: '封面上传失败',
+        description: error instanceof Error ? error.message : '请确认 Supabase Storage bucket 和权限已创建',
+        variant: 'destructive',
+      });
+    } finally {
+      setCoverUploading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -737,12 +763,33 @@ const AdminEvents = () => {
 
               <div className="col-span-2">
                 <Label htmlFor="cover_image">封面图片 URL</Label>
-                <Input
-                  id="cover_image"
-                  value={formData.cover_image}
-                  onChange={(e) => setFormData(prev => ({ ...prev, cover_image: e.target.value }))}
-                  placeholder="https://..."
-                />
+                <div className="mt-1 grid gap-3 sm:grid-cols-[minmax(0,1fr)_180px]">
+                  <Input
+                    id="cover_image"
+                    value={formData.cover_image}
+                    onChange={(e) => setFormData(prev => ({ ...prev, cover_image: e.target.value }))}
+                    placeholder="https://..."
+                  />
+                  <label className="inline-flex h-10 cursor-pointer items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground">
+                    <Upload className="mr-2 h-4 w-4" />
+                    {coverUploading ? '上传中...' : '上传封面'}
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      className="sr-only"
+                      disabled={coverUploading}
+                      onChange={(event) => {
+                        void handleCoverUpload(event.target.files?.[0]);
+                        event.currentTarget.value = '';
+                      }}
+                    />
+                  </label>
+                </div>
+                {formData.cover_image && (
+                  <div className="mt-3 overflow-hidden rounded-xl border border-border/70 bg-secondary">
+                    <img src={formData.cover_image} alt="活动封面预览" className="h-36 w-full object-cover" />
+                  </div>
+                )}
               </div>
               
               <div className="col-span-2 flex items-center space-x-2">

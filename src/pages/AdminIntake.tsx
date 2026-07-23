@@ -22,6 +22,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 
 type Candidate = Tables<'event_import_candidates'>;
+type PublishedEvent = Pick<Tables<'events'>, 'id' | 'title' | 'date' | 'time' | 'address' | 'district' | 'status'>;
 type CandidateStatus = 'all' | 'pending' | 'imported' | 'rejected';
 type SourcePlatform = 'xiaohongshu' | 'manual' | 'wechat' | 'instagram' | 'website' | 'other';
 
@@ -42,6 +43,11 @@ type NormalizedEvent = {
   status: 'active' | 'inactive' | 'draft';
   cover_image?: string;
   tags: string[];
+};
+
+type DuplicateMatch = {
+  event: PublishedEvent;
+  reason: string;
 };
 
 const sourcePlatforms: SourcePlatform[] = ['xiaohongshu', 'manual', 'wechat', 'instagram', 'website', 'other'];
@@ -255,6 +261,7 @@ const AdminIntake = () => {
   const { toast } = useToast();
   const adminBase = getAdminBasePath(location.pathname);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [publishedEvents, setPublishedEvents] = useState<PublishedEvent[]>([]);
   const [jsonText, setJsonText] = useState(sampleJson);
   const [selectedStatus, setSelectedStatus] = useState<CandidateStatus>('pending');
   const [loading, setLoading] = useState(true);
@@ -284,9 +291,28 @@ const AdminIntake = () => {
     }
   }, [toast]);
 
+  const fetchPublishedEvents = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('events')
+      .select('id, title, date, time, address, district, status')
+      .order('date', { ascending: false })
+      .limit(500);
+
+    if (error) {
+      console.error('Error fetching published events for duplicate checks:', error);
+      return;
+    }
+
+    setPublishedEvents(data ?? []);
+  }, []);
+
+  const refreshData = useCallback(async () => {
+    await Promise.all([fetchCandidates(), fetchPublishedEvents()]);
+  }, [fetchCandidates, fetchPublishedEvents]);
+
   useEffect(() => {
-    fetchCandidates();
-  }, [fetchCandidates]);
+    refreshData();
+  }, [refreshData]);
 
   const counts = useMemo(() => {
     return candidates.reduce(
@@ -305,6 +331,15 @@ const AdminIntake = () => {
     if (selectedStatus === 'all') return candidates;
     return candidates.filter((candidate) => candidate.status === selectedStatus);
   }, [candidates, selectedStatus]);
+
+  const duplicateMatchesByCandidate = useMemo(() => {
+    return new Map(
+      candidates.map((candidate) => [
+        candidate.id,
+        findDuplicateEvents(normalizeEventPayload(asRecord(candidate.normalized_event)), publishedEvents),
+      ]),
+    );
+  }, [candidates, publishedEvents]);
 
   const handleCreateCandidates = async () => {
     setSaving(true);
@@ -342,7 +377,7 @@ const AdminIntake = () => {
         description: `新增 ${inserts.length} 条线索，等待审核发布`,
       });
       setSelectedStatus('pending');
-      await fetchCandidates();
+      await refreshData();
     } catch (error) {
       console.error('Create candidates failed:', error);
       toast({
@@ -383,7 +418,7 @@ const AdminIntake = () => {
       });
       setEditingId(null);
       setEditingJson('');
-      await fetchCandidates();
+      await refreshData();
     } catch (error) {
       toast({
         title: '保存失败',
@@ -413,17 +448,27 @@ const AdminIntake = () => {
       return;
     }
 
-    await fetchCandidates();
+    await refreshData();
   };
 
   const handlePublishCandidate = async (candidate: Candidate) => {
     const normalized = normalizeEventPayload(asRecord(candidate.normalized_event));
     const validation = validateNormalizedEvent(normalized);
+    const duplicateMatches = findDuplicateEvents(normalized, publishedEvents);
 
     if (!validation.valid) {
       toast({
         title: '线索还不能发布',
         description: validation.errors.join('\n'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (duplicateMatches.length > 0) {
+      toast({
+        title: '疑似重复活动',
+        description: `已找到 ${duplicateMatches.length} 个正式活动匹配，请先编辑关键字段或确认已有活动。`,
         variant: 'destructive',
       });
       return;
@@ -460,7 +505,7 @@ const AdminIntake = () => {
         title: '活动已发布',
         description: `"${insertedEvent.title}" 已写入正式活动库`,
       });
-      await fetchCandidates();
+      await refreshData();
     } catch (error) {
       console.error('Publish candidate failed:', error);
       toast({
@@ -488,7 +533,7 @@ const AdminIntake = () => {
                 <p className="text-sm text-muted-foreground">先收集线索，审核后发布为正式活动</p>
               </div>
             </div>
-            <Button onClick={fetchCandidates} variant="outline" disabled={loading}>
+            <Button onClick={refreshData} variant="outline" disabled={loading}>
               <RotateCcw className="mr-2 h-4 w-4" />
               刷新
             </Button>
@@ -576,6 +621,7 @@ const AdminIntake = () => {
                   editingId={editingId}
                   editingJson={editingJson}
                   saving={saving}
+                  duplicateMatches={duplicateMatchesByCandidate.get(candidate.id) ?? []}
                   onEdit={handleEditCandidate}
                   onEditingJsonChange={setEditingJson}
                   onSave={handleSaveCandidate}
@@ -601,6 +647,7 @@ type CandidateCardProps = {
   editingId: string | null;
   editingJson: string;
   saving: boolean;
+  duplicateMatches: DuplicateMatch[];
   onEdit: (candidate: Candidate) => void;
   onEditingJsonChange: (value: string) => void;
   onSave: (candidate: Candidate) => void;
@@ -615,6 +662,7 @@ const CandidateCard = ({
   editingId,
   editingJson,
   saving,
+  duplicateMatches,
   onEdit,
   onEditingJsonChange,
   onSave,
@@ -627,6 +675,7 @@ const CandidateCard = ({
   const validation = validateNormalizedEvent(normalized);
   const isEditing = editingId === candidate.id;
   const importedUrl = candidate.imported_event_id ? `/event/${candidate.imported_event_id}` : null;
+  const hasDuplicates = duplicateMatches.length > 0;
 
   return (
     <Card className="border-border/50 bg-gradient-card">
@@ -639,9 +688,9 @@ const CandidateCard = ({
                 {candidate.source_platform}
               </Badge>
               {validation.valid ? (
-                <span className="inline-flex items-center text-xs font-bold text-primary">
+                <span className={['inline-flex items-center text-xs font-bold', hasDuplicates ? 'text-amber-700' : 'text-primary'].join(' ')}>
                   <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
-                  可发布
+                  {hasDuplicates ? '疑似重复' : '可发布'}
                 </span>
               ) : (
                 <span className="inline-flex items-center text-xs font-bold text-destructive">
@@ -696,6 +745,25 @@ const CandidateCard = ({
           </div>
         )}
 
+        {hasDuplicates && (
+          <div className="rounded-xl border border-amber-300/70 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-950">
+            <p className="mb-2 font-black">检测到可能重复的正式活动，发布前请先核对：</p>
+            <div className="space-y-2">
+              {duplicateMatches.map((match) => (
+                <a
+                  key={`${match.event.id}-${match.reason}`}
+                  href={`/event/${match.event.id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block rounded-lg bg-card/80 px-3 py-2 text-amber-950 underline-offset-4 hover:underline"
+                >
+                  {match.event.title} · {match.event.date} {String(match.event.time).slice(0, 5)} · {match.reason}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
         {isEditing && (
           <div className="space-y-3 rounded-xl border border-border/60 bg-card p-3">
             <Textarea
@@ -733,9 +801,9 @@ const CandidateCard = ({
               拒绝
             </Button>
           )}
-          <Button onClick={() => onPublish(candidate)} disabled={saving || candidate.status === 'imported' || !validation.valid}>
+          <Button onClick={() => onPublish(candidate)} disabled={saving || candidate.status === 'imported' || !validation.valid || hasDuplicates}>
             <Send className="mr-2 h-4 w-4" />
-            发布活动
+            {hasDuplicates ? '需先去重' : '发布活动'}
           </Button>
         </div>
       </CardContent>
@@ -753,6 +821,28 @@ const InfoTile = ({ label, value }: { label: string; value: string }) => (
 const StatusBadge = ({ status }: { status: string }) => {
   const label = status === 'pending' ? '待审核' : status === 'imported' ? '已发布' : status === 'rejected' ? '已拒绝' : status;
   return <Badge className="rounded-full">{label}</Badge>;
+};
+
+const findDuplicateEvents = (event: NormalizedEvent, publishedEvents: PublishedEvent[]): DuplicateMatch[] => {
+  if (!event.title || !event.date) return [];
+
+  const titleKey = normalizeComparable(event.title);
+  const addressKey = normalizeComparable(event.address);
+  const timeKey = normalizeTime(event.time);
+
+  return publishedEvents
+    .map((publishedEvent) => {
+      const sameTitleAndDate = normalizeComparable(publishedEvent.title) === titleKey && publishedEvent.date === event.date;
+      const samePlaceAndTime = Boolean(addressKey)
+        && normalizeComparable(publishedEvent.address) === addressKey
+        && publishedEvent.date === event.date
+        && normalizeTime(String(publishedEvent.time).slice(0, 5)) === timeKey;
+
+      if (sameTitleAndDate) return { event: publishedEvent, reason: '同标题同日期' };
+      if (samePlaceAndTime) return { event: publishedEvent, reason: '同日期同时间同地址' };
+      return null;
+    })
+    .filter((match): match is DuplicateMatch => Boolean(match));
 };
 
 const validateNormalizedEvent = (event: NormalizedEvent) => {
@@ -890,6 +980,13 @@ const normalizeTime = (value: string) => {
   if (!match) return trimmed;
   return `${match[1].padStart(2, '0')}:${match[2]}`;
 };
+
+const normalizeComparable = (value: string) =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '')
+    .replace(/[，,。.\-—_·]/g, '');
 
 const normalizeTags = (value: unknown) => {
   if (Array.isArray(value)) {
