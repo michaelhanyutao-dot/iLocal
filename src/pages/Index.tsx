@@ -74,33 +74,32 @@ const Index = () => {
   };
 
   const handleEventSelect = (event: Event) => {
-    setSelectedEvent(event);
-    toast({
-      title: event.title,
-      description: `${event.dateLabel ?? event.date} ${event.time} · ${event.location.district}`,
-    });
+    navigate(`/event/${event.id}`);
   };
 
-  const handleLocationRequest = () => {
+  const handleLocationRequest = async () => {
     toast({
       title: '正在获取当前位置',
       description: '如果浏览器或小程序弹出权限提示，请选择允许定位。',
     });
-    requestLocation();
+    try {
+      await requestLocation();
+      toast({
+        title: '已定位当前位置',
+        description: '地图已切换到你的当前位置。',
+      });
+    } catch (error) {
+      toast({
+        title: '无法定位当前位置',
+        description: error instanceof Error ? error.message : '请检查浏览器或小程序定位权限。',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleOpenEventMap = (event: Event) => {
     openExternalUrl(buildTencentMapMarkerUrl(event));
   };
-
-  useEffect(() => {
-    if (!locationError) return;
-    toast({
-      title: '无法定位当前位置',
-      description: '请在浏览器或小程序设置中允许定位权限，然后再试一次。',
-      variant: 'destructive',
-    });
-  }, [locationError, toast]);
 
   const clearFilters = () => {
     setSearchQuery('');

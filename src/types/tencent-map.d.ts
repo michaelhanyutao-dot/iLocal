@@ -5,6 +5,9 @@ declare global {
 
   interface TMapMap {
     destroy: () => void;
+    off?: (eventName: string, handler: () => void) => void;
+    on?: (eventName: string, handler: () => void) => void;
+    projectToContainer?: (position: TMapLatLng) => { x?: number; y?: number; getX?: () => number; getY?: () => number };
     setCenter: (position: TMapLatLng) => void;
     setZoom: (zoom: number) => void;
   }

@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { AlertCircle, Loader2, Send, UserRound } from 'lucide-react';
+import { AlertCircle, Loader2, LocateFixed, UserRound } from 'lucide-react';
 import { loadTencentMap } from '@/lib/tencentMapLoader';
 import { Button } from '@/components/ui/button';
 import type { Event, EventCategory, UserLocation } from '@/types/event';
@@ -15,42 +15,35 @@ const CATEGORY_EMOJIS: Record<EventCategory, string> = {
   bar: '🎧',
   sports: '🏃‍♂️',
 };
-const CATEGORY_MARKER_COLORS: Record<EventCategory, string> = {
-  coffee: '#D6AA82',
-  music: '#B794F6',
-  market: '#68D391',
-  party: '#F6AD55',
-  exhibition: '#63B3ED',
-  bar: '#FC8181',
-  sports: '#93A8F3',
+const CATEGORY_MARKER_CLASSES: Record<EventCategory, string> = {
+  coffee: 'bg-coffee',
+  music: 'bg-music',
+  market: 'bg-market',
+  party: 'bg-party',
+  exhibition: 'bg-exhibition',
+  bar: 'bg-bar',
+  sports: 'bg-sports',
 };
-const USER_MARKER_ICON =
-  'data:image/svg+xml;charset=UTF-8,' +
-  encodeURIComponent(`
-    <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="22" cy="22" r="21" fill="white" stroke="#C7A6DD" stroke-width="2"/>
-      <circle cx="22" cy="15" r="5.2" fill="#C7A6DD"/>
-      <path d="M11.8 34.2c1.8-6 5.4-9 10.2-9s8.4 3 10.2 9" stroke="#C7A6DD" stroke-width="4" stroke-linecap="round"/>
-    </svg>
-  `);
 
-const svgToDataUrl = (svg: string) =>
-  `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
+const MAP_MOVE_EVENTS = ['center_changed', 'zoom_changed', 'bounds_changed', 'idle', 'resize'];
 
-const createCategoryCircleIcon = (category: EventCategory, selected = false) => {
-  const size = selected ? 38 : 32;
-  const center = size / 2;
-  const radius = selected ? 17 : 14;
-  const shadowOpacity = selected ? 0.28 : 0.18;
-  const fontSize = selected ? 20 : 17;
+interface ScreenPoint {
+  x: number;
+  y: number;
+  visible: boolean;
+}
 
-  return svgToDataUrl(`
-      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="${center}" cy="${center + 1.5}" r="${radius}" fill="#45384D" opacity="${shadowOpacity}"/>
-        <circle cx="${center}" cy="${center}" r="${radius}" fill="${CATEGORY_MARKER_COLORS[category]}" stroke="white" stroke-width="${selected ? 3 : 2}"/>
-        <text x="${center}" y="${center}" text-anchor="middle" dominant-baseline="central" font-size="${fontSize}" font-family="Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif">${CATEGORY_EMOJIS[category]}</text>
-      </svg>
-    `);
+const getScreenCoordinate = (point: unknown) => {
+  if (!point || typeof point !== 'object') return null;
+  const value = point as { x?: unknown; y?: unknown; getX?: () => number; getY?: () => number };
+  const x = typeof value.x === 'number' ? value.x : value.getX?.();
+  const y = typeof value.y === 'number' ? value.y : value.getY?.();
+
+  if (typeof x !== 'number' || typeof y !== 'number' || Number.isNaN(x) || Number.isNaN(y)) {
+    return null;
+  }
+
+  return { x, y };
 };
 
 interface EventMapProps {
@@ -74,13 +67,71 @@ const EventMap = ({
 }: EventMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<TMapMap | null>(null);
-  const eventMarkerLayerRef = useRef<TMapMarkerLayer | null>(null);
-  const userMarkerLayerRef = useRef<TMapMarkerLayer | null>(null);
-  const eventLookupRef = useRef<Record<string, Event>>({});
+  const animationFrameRef = useRef<number | null>(null);
+  const syncOverlayPositionsRef = useRef<() => void>(() => {});
+  const [eventPoints, setEventPoints] = useState<Record<string, ScreenPoint>>({});
+  const [userPoint, setUserPoint] = useState<ScreenPoint | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+
+  const projectLocation = useCallback((location: UserLocation): ScreenPoint | null => {
+    const map = mapInstanceRef.current;
+    const mapElement = mapRef.current;
+
+    if (!map || !mapElement || !window.TMap || typeof map.projectToContainer !== 'function') {
+      return null;
+    }
+
+    const point = getScreenCoordinate(
+      map.projectToContainer(new window.TMap.LatLng(location.lat, location.lng)),
+    );
+
+    if (!point) return null;
+
+    return {
+      ...point,
+      visible:
+        point.x >= -36 &&
+        point.y >= -36 &&
+        point.x <= mapElement.clientWidth + 36 &&
+        point.y <= mapElement.clientHeight + 36,
+    };
+  }, []);
+
+  const scheduleOverlaySync = useCallback(() => {
+    if (animationFrameRef.current !== null) {
+      window.cancelAnimationFrame(animationFrameRef.current);
+    }
+
+    animationFrameRef.current = window.requestAnimationFrame(() => {
+      animationFrameRef.current = null;
+      syncOverlayPositionsRef.current();
+    });
+  }, []);
+
+  useEffect(() => {
+    syncOverlayPositionsRef.current = () => {
+      if (status !== 'ready') {
+        setEventPoints({});
+        setUserPoint(null);
+        return;
+      }
+
+      setEventPoints(
+        Object.fromEntries(
+          events
+            .map((event) => [event.id, projectLocation(event.location)] as const)
+            .filter((entry): entry is readonly [string, ScreenPoint] => Boolean(entry[1])),
+        ),
+      );
+      setUserPoint(userLocation ? projectLocation(userLocation) : null);
+    };
+
+    scheduleOverlaySync();
+  }, [events, projectLocation, scheduleOverlaySync, status, userLocation]);
 
   useEffect(() => {
     let cancelled = false;
+    let detachMapEvents: (() => void) | null = null;
 
     loadTencentMap()
       .then((TMap) => {
@@ -93,10 +144,20 @@ const EventMap = ({
             showControl: false,
             viewMode: '2D',
           });
+
+          MAP_MOVE_EVENTS.forEach((eventName) => {
+            mapInstanceRef.current?.on?.(eventName, scheduleOverlaySync);
+          });
+          detachMapEvents = () => {
+            MAP_MOVE_EVENTS.forEach((eventName) => {
+              mapInstanceRef.current?.off?.(eventName, scheduleOverlaySync);
+            });
+          };
         } catch (mapError) {
           console.error('Tencent map initialization failed:', mapError);
         }
         setStatus('ready');
+        scheduleOverlaySync();
       })
       .catch(() => {
         if (!cancelled) setStatus('error');
@@ -104,101 +165,23 @@ const EventMap = ({
 
     return () => {
       cancelled = true;
-      eventMarkerLayerRef.current?.setMap(null);
-      eventMarkerLayerRef.current = null;
-      userMarkerLayerRef.current?.setMap(null);
-      userMarkerLayerRef.current = null;
+      detachMapEvents?.();
+      if (animationFrameRef.current !== null) {
+        window.cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
       mapInstanceRef.current?.destroy();
       mapInstanceRef.current = null;
     };
-  }, []);
+  }, [scheduleOverlaySync]);
 
   useEffect(() => {
-    if (status !== 'ready' || !window.TMap || !mapInstanceRef.current) return;
+    if (status !== 'ready' || !window.TMap || !mapInstanceRef.current || !userLocation) return;
 
-    eventMarkerLayerRef.current?.setMap(null);
-    eventMarkerLayerRef.current = null;
-    eventLookupRef.current = Object.fromEntries(events.map((event) => [event.id, event]));
-
-    try {
-      const markerStyles = Object.keys(CATEGORY_MARKER_COLORS).reduce<Record<string, unknown>>((styles, category) => {
-        const eventCategory = category as EventCategory;
-        styles[eventCategory] = new window.TMap!.MarkerStyle({
-          width: 32,
-          height: 32,
-          anchor: { x: 16, y: 16 },
-          src: createCategoryCircleIcon(eventCategory),
-        });
-        styles[`${eventCategory}-selected`] = new window.TMap!.MarkerStyle({
-          width: 40,
-          height: 40,
-          anchor: { x: 20, y: 20 },
-          src: createCategoryCircleIcon(eventCategory, true),
-        });
-        return styles;
-      }, {});
-
-      eventMarkerLayerRef.current = new window.TMap.MultiMarker({
-        id: 'ilocal-event-marker-circles',
-        map: mapInstanceRef.current,
-        styles: markerStyles,
-        geometries: events.map((event) => ({
-          id: event.id,
-          styleId: event.id === selectedEvent?.id ? `${event.category}-selected` : event.category,
-          position: new window.TMap.LatLng(event.location.lat, event.location.lng),
-          properties: {
-            title: event.title,
-          },
-        })),
-      });
-
-      eventMarkerLayerRef.current.on('click', (markerEvent) => {
-        const eventId = markerEvent.geometry?.id ?? markerEvent.cluster?.geometry?.id;
-        const event = eventId ? eventLookupRef.current[eventId] : null;
-        if (event) onEventSelect(event);
-      });
-    } catch (markerError) {
-      console.error('Tencent map markers failed:', markerError);
-    }
-  }, [events, onEventSelect, selectedEvent?.id, status]);
-
-  useEffect(() => {
-    if (status !== 'ready' || !window.TMap || !mapInstanceRef.current) return;
-
-    userMarkerLayerRef.current?.setMap(null);
-    userMarkerLayerRef.current = null;
-
-    if (!userLocation) return;
-
-    try {
-      const markerStyle = new window.TMap.MarkerStyle({
-        width: 44,
-        height: 44,
-        anchor: { x: 22, y: 22 },
-        src: USER_MARKER_ICON,
-      });
-
-      userMarkerLayerRef.current = new window.TMap.MultiMarker({
-        id: 'ilocal-user-location-marker',
-        map: mapInstanceRef.current,
-        styles: {
-          user: markerStyle,
-        },
-        geometries: [
-          {
-            id: 'user-location',
-            styleId: 'user',
-            position: new window.TMap.LatLng(userLocation.lat, userLocation.lng),
-          },
-        ],
-      });
-
-      mapInstanceRef.current.setCenter(new window.TMap.LatLng(userLocation.lat, userLocation.lng));
-      mapInstanceRef.current.setZoom(15);
-    } catch (markerError) {
-      console.error('Tencent user marker failed:', markerError);
-    }
-  }, [status, userLocation]);
+    mapInstanceRef.current.setCenter(new window.TMap.LatLng(userLocation.lat, userLocation.lng));
+    mapInstanceRef.current.setZoom(15);
+    scheduleOverlaySync();
+  }, [scheduleOverlaySync, status, userLocation]);
 
   useEffect(() => {
     if (selectedEvent && mapInstanceRef.current && window.TMap) {
@@ -206,16 +189,64 @@ const EventMap = ({
         new window.TMap.LatLng(selectedEvent.location.lat, selectedEvent.location.lng),
       );
       mapInstanceRef.current.setZoom(15);
+      scheduleOverlaySync();
     }
-  }, [selectedEvent]);
+  }, [scheduleOverlaySync, selectedEvent]);
 
   return (
     <div className="relative h-full w-full">
       <div ref={mapRef} className="ilocal-tencent-map h-full w-full overflow-hidden rounded-2xl shadow-card" />
+      {status === 'ready' && (
+        <div className="pointer-events-none absolute inset-0 z-20">
+          {events.map((event) => {
+            const point = eventPoints[event.id];
+            if (!point?.visible) return null;
+
+            const isSelected = event.id === selectedEvent?.id;
+
+            return (
+              <button
+                key={event.id}
+                type="button"
+                className={[
+                  'pointer-events-auto absolute grid h-8 w-8 -translate-x-1/2 -translate-y-1/2 touch-manipulation place-items-center rounded-full border-2 border-white text-[17px] leading-none shadow-soft transition-transform hover:scale-110 active:scale-95',
+                  CATEGORY_MARKER_CLASSES[event.category],
+                  isSelected ? 'h-9 w-9 text-[19px] ring-4 ring-primary/25' : '',
+                ].join(' ')}
+                style={{ left: point.x, top: point.y }}
+                onPointerDown={(markerEvent) => markerEvent.stopPropagation()}
+                onClick={(markerEvent) => {
+                  markerEvent.preventDefault();
+                  markerEvent.stopPropagation();
+                  onEventSelect(event);
+                }}
+                aria-label={`查看活动 ${event.title}`}
+              >
+                {CATEGORY_EMOJIS[event.category]}
+              </button>
+            );
+          })}
+
+          {userPoint?.visible && (
+            <div
+              className="absolute grid h-10 w-10 -translate-x-1/2 -translate-y-1/2 place-items-center"
+              style={{ left: userPoint.x, top: userPoint.y }}
+              aria-label="当前位置"
+            >
+              <span className="absolute h-10 w-10 rounded-full bg-primary/25" />
+              <span className="relative grid h-8 w-8 place-items-center rounded-full border-2 border-white bg-card text-primary shadow-soft">
+                <UserRound className="h-4 w-4" />
+              </span>
+            </div>
+          )}
+        </div>
+      )}
       <Button
         type="button"
         variant="outline"
-        onPointerDown={(event) => event.stopPropagation()}
+        onMouseDownCapture={(event) => event.stopPropagation()}
+        onPointerDownCapture={(event) => event.stopPropagation()}
+        onTouchStartCapture={(event) => event.stopPropagation()}
         onClick={(event) => {
           event.preventDefault();
           event.stopPropagation();
@@ -234,7 +265,7 @@ const EventMap = ({
         ) : userLocation ? (
           <UserRound className="h-4 w-4 text-primary" />
         ) : (
-          <Send className="h-4 w-4 text-primary" />
+          <LocateFixed className="h-4 w-4 text-primary" />
         )}
         <span>{locationLoading ? '定位中' : '当前位置'}</span>
       </Button>
