@@ -50,7 +50,7 @@ const FilterBar = ({
               key={category.key}
               type="button"
               className={[
-                'flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-bold shadow-sm transition-colors sm:h-9 sm:px-3.5 sm:text-sm',
+                'flex h-14 w-14 shrink-0 flex-col items-center justify-center gap-1 rounded-2xl border text-xs font-bold shadow-sm transition-colors sm:h-[60px] sm:w-[60px]',
                 isSelected
                   ? isAll
                     ? 'border-primary/50 bg-primary text-primary-foreground'
@@ -65,7 +65,7 @@ const FilterBar = ({
                 onCategoryToggle(category.key as EventCategory);
               }}
             >
-              <span className="text-base leading-none sm:text-[17px]">{category.icon}</span>
+              <span className="text-[21px] leading-none sm:text-[22px]">{category.icon}</span>
               <span className="leading-none">{category.label}</span>
             </button>
           );

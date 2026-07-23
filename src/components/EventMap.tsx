@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { AlertCircle, Loader2, LocateFixed, Navigation, UserRound } from 'lucide-react';
+import { AlertCircle, Loader2, Send, UserRound } from 'lucide-react';
 import { loadTencentMap } from '@/lib/tencentMapLoader';
 import { Button } from '@/components/ui/button';
 import type { Event, EventCategory, UserLocation } from '@/types/event';
@@ -13,7 +13,7 @@ const CATEGORY_EMOJIS: Record<EventCategory, string> = {
   party: '🥂',
   exhibition: '🖼️',
   bar: '🎧',
-  sports: '🏃',
+  sports: '🏃‍♂️',
 };
 const CATEGORY_MARKER_COLORS: Record<EventCategory, string> = {
   coffee: '#D6AA82',
@@ -34,21 +34,23 @@ const USER_MARKER_ICON =
     </svg>
   `);
 
+const svgToDataUrl = (svg: string) =>
+  `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
+
 const createCategoryCircleIcon = (category: EventCategory, selected = false) => {
-  const size = selected ? 40 : 32;
+  const size = selected ? 38 : 32;
   const center = size / 2;
   const radius = selected ? 17 : 14;
   const shadowOpacity = selected ? 0.28 : 0.18;
+  const fontSize = selected ? 20 : 17;
 
-  return (
-    'data:image/svg+xml;charset=UTF-8,' +
-    encodeURIComponent(`
+  return svgToDataUrl(`
       <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="${center}" cy="${center + 1}" r="${radius}" fill="#45384D" opacity="${shadowOpacity}"/>
+        <circle cx="${center}" cy="${center + 1.5}" r="${radius}" fill="#45384D" opacity="${shadowOpacity}"/>
         <circle cx="${center}" cy="${center}" r="${radius}" fill="${CATEGORY_MARKER_COLORS[category]}" stroke="white" stroke-width="${selected ? 3 : 2}"/>
+        <text x="${center}" y="${center}" text-anchor="middle" dominant-baseline="central" font-size="${fontSize}" font-family="Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif">${CATEGORY_EMOJIS[category]}</text>
       </svg>
-    `)
-  );
+    `);
 };
 
 interface EventMapProps {
@@ -73,7 +75,6 @@ const EventMap = ({
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<TMapMap | null>(null);
   const eventMarkerLayerRef = useRef<TMapMarkerLayer | null>(null);
-  const eventLabelLayerRef = useRef<TMapOverlayLayer | null>(null);
   const userMarkerLayerRef = useRef<TMapMarkerLayer | null>(null);
   const eventLookupRef = useRef<Record<string, Event>>({});
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -105,8 +106,6 @@ const EventMap = ({
       cancelled = true;
       eventMarkerLayerRef.current?.setMap(null);
       eventMarkerLayerRef.current = null;
-      eventLabelLayerRef.current?.setMap(null);
-      eventLabelLayerRef.current = null;
       userMarkerLayerRef.current?.setMap(null);
       userMarkerLayerRef.current = null;
       mapInstanceRef.current?.destroy();
@@ -117,18 +116,11 @@ const EventMap = ({
   useEffect(() => {
     if (status !== 'ready' || !window.TMap || !mapInstanceRef.current) return;
 
-    eventLabelLayerRef.current?.setMap(null);
-    eventLabelLayerRef.current = null;
     eventMarkerLayerRef.current?.setMap(null);
     eventMarkerLayerRef.current = null;
     eventLookupRef.current = Object.fromEntries(events.map((event) => [event.id, event]));
 
     try {
-      if (!window.TMap.MultiLabel || !window.TMap.LabelStyle) {
-        throw new Error('Tencent map labels are unavailable');
-      }
-      const { LabelStyle, MultiLabel } = window.TMap;
-
       const markerStyles = Object.keys(CATEGORY_MARKER_COLORS).reduce<Record<string, unknown>>((styles, category) => {
         const eventCategory = category as EventCategory;
         styles[eventCategory] = new window.TMap!.MarkerStyle({
@@ -142,28 +134,6 @@ const EventMap = ({
           height: 40,
           anchor: { x: 20, y: 20 },
           src: createCategoryCircleIcon(eventCategory, true),
-        });
-        return styles;
-      }, {});
-
-      const labelStyles = Object.keys(CATEGORY_EMOJIS).reduce<Record<string, unknown>>((styles, category) => {
-        styles[category] = new LabelStyle({
-          size: 16,
-          color: '#FFFFFF',
-          strokeColor: 'rgba(0,0,0,0)',
-          strokeWidth: 0,
-          alignment: 'center',
-          verticalAlignment: 'middle',
-          offset: { x: 0, y: 0 },
-        });
-        styles[`${category}-selected`] = new LabelStyle({
-          size: 19,
-          color: '#FFFFFF',
-          strokeColor: 'rgba(0,0,0,0)',
-          strokeWidth: 0,
-          alignment: 'center',
-          verticalAlignment: 'middle',
-          offset: { x: 0, y: 0 },
         });
         return styles;
       }, {});
@@ -182,28 +152,7 @@ const EventMap = ({
         })),
       });
 
-      eventLabelLayerRef.current = new MultiLabel({
-        id: 'ilocal-event-emoji-labels',
-        map: mapInstanceRef.current,
-        styles: labelStyles,
-        geometries: events.map((event) => ({
-          id: event.id,
-          styleId: event.id === selectedEvent?.id ? `${event.category}-selected` : event.category,
-          position: new window.TMap.LatLng(event.location.lat, event.location.lng),
-          content: CATEGORY_EMOJIS[event.category],
-          properties: {
-            title: event.title,
-          },
-        })),
-      });
-
       eventMarkerLayerRef.current.on('click', (markerEvent) => {
-        const eventId = markerEvent.geometry?.id ?? markerEvent.cluster?.geometry?.id;
-        const event = eventId ? eventLookupRef.current[eventId] : null;
-        if (event) onEventSelect(event);
-      });
-
-      eventLabelLayerRef.current.on('click', (markerEvent) => {
         const eventId = markerEvent.geometry?.id ?? markerEvent.cluster?.geometry?.id;
         const event = eventId ? eventLookupRef.current[eventId] : null;
         if (event) onEventSelect(event);
@@ -263,16 +212,9 @@ const EventMap = ({
   return (
     <div className="relative h-full w-full">
       <div ref={mapRef} className="ilocal-tencent-map h-full w-full overflow-hidden rounded-2xl shadow-card" />
-      <div className="pointer-events-none absolute left-3 top-3 z-10 rounded-full border border-border/80 bg-card/95 px-3 py-1.5 text-xs font-black text-foreground shadow-sm backdrop-blur">
-        500 米
-      </div>
-      <div className="pointer-events-none absolute right-3 top-3 z-10 grid h-11 w-11 place-items-center rounded-full border border-border/80 bg-card/95 text-primary shadow-sm backdrop-blur">
-        <Navigation className="h-5 w-5 -rotate-45" strokeWidth={2.7} />
-      </div>
       <Button
         type="button"
         variant="outline"
-        size="icon"
         onPointerDown={(event) => event.stopPropagation()}
         onClick={(event) => {
           event.preventDefault();
@@ -281,26 +223,26 @@ const EventMap = ({
         }}
         disabled={locationLoading}
         className={[
-          'pointer-events-auto absolute right-3 z-30 h-12 w-12 touch-manipulation rounded-full border-border/80 bg-card/95 text-primary shadow-float backdrop-blur hover:bg-card sm:right-4',
-          selectedEvent ? 'bottom-[104px]' : 'bottom-4',
+          'pointer-events-auto absolute right-3 top-3 z-30 h-10 touch-manipulation gap-2 rounded-full border-border/80 bg-card/95 px-3 text-sm font-black text-foreground shadow-soft backdrop-blur hover:bg-card sm:right-4 sm:top-4',
         ].join(' ')}
         aria-label="定位当前位置"
       >
         {locationLoading ? (
-          <Loader2 className="h-5 w-5 animate-spin" />
+          <Loader2 className="h-4 w-4 animate-spin text-primary" />
         ) : locationError ? (
-          <AlertCircle className="h-5 w-5 text-destructive" />
+          <AlertCircle className="h-4 w-4 text-destructive" />
         ) : userLocation ? (
-          <UserRound className="h-5 w-5" />
+          <UserRound className="h-4 w-4 text-primary" />
         ) : (
-          <LocateFixed className="h-5 w-5" />
+          <Send className="h-4 w-4 text-primary" />
         )}
+        <span>{locationLoading ? '定位中' : '当前位置'}</span>
       </Button>
       {locationError && (
         <div
           className={[
             'absolute right-3 z-10 max-w-[250px] rounded-2xl border border-destructive/30 bg-card/95 px-3 py-2 text-xs font-bold text-destructive shadow-soft backdrop-blur sm:right-4',
-            selectedEvent ? 'bottom-[162px]' : 'bottom-[72px]',
+            'top-16 sm:top-[68px]',
           ].join(' ')}
         >
           请在浏览器或小程序设置中允许定位权限

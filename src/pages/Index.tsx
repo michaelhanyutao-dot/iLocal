@@ -14,6 +14,7 @@ import { useEvents } from '@/hooks/useEvents';
 import { useLocation } from '@/hooks/useLocation';
 import { useToast } from '@/hooks/use-toast';
 import { useEventLibrary } from '@/lib/eventLibrary';
+import { buildTencentMapMarkerUrl, openExternalUrl } from '@/lib/mapLinks';
 import { Event, EventCategory } from '@/types/event';
 
 const Index = () => {
@@ -86,6 +87,10 @@ const Index = () => {
       description: '如果浏览器或小程序弹出权限提示，请选择允许定位。',
     });
     requestLocation();
+  };
+
+  const handleOpenEventMap = (event: Event) => {
+    openExternalUrl(buildTencentMapMarkerUrl(event));
   };
 
   useEffect(() => {
@@ -180,9 +185,16 @@ const Index = () => {
                 </div>
               )}
               {selectedEvent && (
-                <button
-                  type="button"
+                <div
+                  role="button"
+                  tabIndex={0}
                   onClick={() => navigate(`/event/${selectedEvent.id}`)}
+                  onKeyDown={(eventKey) => {
+                    if (eventKey.key === 'Enter' || eventKey.key === ' ') {
+                      eventKey.preventDefault();
+                      navigate(`/event/${selectedEvent.id}`);
+                    }
+                  }}
                   className="absolute inset-x-3 bottom-4 flex items-center gap-3 rounded-2xl bg-card/95 p-3 text-left shadow-soft backdrop-blur sm:inset-x-4 sm:bottom-5"
                 >
                   <img
@@ -196,8 +208,19 @@ const Index = () => {
                       {selectedEvent.location.district} · {selectedEvent.ticket.isFree ? '免费' : `¥${selectedEvent.ticket.price}`}
                     </span>
                   </span>
-                  <Send className="h-5 w-5 shrink-0 text-primary" />
-                </button>
+                  <button
+                    type="button"
+                    aria-label="在腾讯地图中查看"
+                    onClick={(eventClick) => {
+                      eventClick.preventDefault();
+                      eventClick.stopPropagation();
+                      handleOpenEventMap(selectedEvent);
+                    }}
+                    className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-primary transition-colors hover:bg-secondary/70"
+                  >
+                    <Send className="h-5 w-5" />
+                  </button>
+                </div>
               )}
             </div>
           ) : (
