@@ -3,9 +3,18 @@ import type { ReactNode } from 'react';
 import { AlertCircle, Loader2, LocateFixed, Navigation, UserRound } from 'lucide-react';
 import { loadTencentMap } from '@/lib/tencentMapLoader';
 import { Button } from '@/components/ui/button';
-import type { Event, UserLocation } from '@/types/event';
+import type { Event, EventCategory, UserLocation } from '@/types/event';
 
 const BEIJING: UserLocation = { lat: 39.9042, lng: 116.4074 };
+const CATEGORY_MARKERS: Record<EventCategory, { icon: string; color: string }> = {
+  coffee: { icon: '☕', color: '#8A6B4F' },
+  music: { icon: '🎵', color: '#B75B7A' },
+  market: { icon: '🛍️', color: '#D48639' },
+  party: { icon: '🥂', color: '#9B78BE' },
+  exhibition: { icon: '🖼️', color: '#5F8D78' },
+  bar: { icon: '🍷', color: '#9E4E64' },
+  sports: { icon: '🏃', color: '#718E4F' },
+};
 const USER_MARKER_ICON =
   'data:image/svg+xml;charset=UTF-8,' +
   encodeURIComponent(`
@@ -15,6 +24,29 @@ const USER_MARKER_ICON =
       <path d="M11.8 34.2c1.8-6 5.4-9 10.2-9s8.4 3 10.2 9" stroke="#7D9255" stroke-width="4" stroke-linecap="round"/>
     </svg>
   `);
+
+const createCategoryMarkerIcon = (category: EventCategory, selected = false) => {
+  const marker = CATEGORY_MARKERS[category];
+  const size = selected ? 50 : 42;
+  const center = size / 2;
+  const circleRadius = selected ? 19 : 16;
+  const pointTop = selected ? 34 : 29;
+  const pointBottom = selected ? 48 : 40;
+  const emojiSize = selected ? 21 : 18;
+  const shadowOpacity = selected ? 0.28 : 0.2;
+
+  return (
+    'data:image/svg+xml;charset=UTF-8,' +
+    encodeURIComponent(`
+      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="${center}" cy="${pointBottom - 2}" rx="${selected ? 12 : 9}" ry="${selected ? 3.8 : 3}" fill="#1F241A" opacity="${shadowOpacity}"/>
+        <path d="M${center} ${pointBottom} C${center - 5.5} ${pointTop} ${center - circleRadius} ${pointTop - 6} ${center - circleRadius} ${center} C${center - circleRadius} ${center - circleRadius} ${center - circleRadius / 2} ${center - circleRadius} ${center} ${center - circleRadius} C${center + circleRadius / 2} ${center - circleRadius} ${center + circleRadius} ${center - circleRadius} ${center + circleRadius} ${center} C${center + circleRadius} ${pointTop - 6} ${center + 5.5} ${pointTop} ${center} ${pointBottom}Z" fill="${marker.color}"/>
+        <circle cx="${center}" cy="${center}" r="${circleRadius - 2}" fill="white" opacity="0.96"/>
+        <text x="${center}" y="${center + emojiSize * 0.34}" text-anchor="middle" font-size="${emojiSize}" font-family="Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif">${marker.icon}</text>
+      </svg>
+    `)
+  );
+};
 
 interface EventMapProps {
   events: Event[];
@@ -83,11 +115,33 @@ const EventMap = ({
     eventLookupRef.current = Object.fromEntries(events.map((event) => [event.id, event]));
 
     try {
+      const markerStyles = Object.entries(CATEGORY_MARKERS).reduce<Record<string, unknown>>(
+        (styles, [category]) => {
+          const normalKey = category as EventCategory;
+          styles[normalKey] = new window.TMap.MarkerStyle({
+            width: 42,
+            height: 42,
+            anchor: { x: 21, y: 40 },
+            src: createCategoryMarkerIcon(normalKey),
+          });
+          styles[`${normalKey}-selected`] = new window.TMap.MarkerStyle({
+            width: 50,
+            height: 50,
+            anchor: { x: 25, y: 48 },
+            src: createCategoryMarkerIcon(normalKey, true),
+          });
+          return styles;
+        },
+        {},
+      );
+
       markerLayerRef.current = new window.TMap.MultiMarker({
         id: 'ilocal-event-markers',
         map: mapInstanceRef.current,
+        styles: markerStyles,
         geometries: events.map((event) => ({
           id: event.id,
+          styleId: event.id === selectedEvent?.id ? `${event.category}-selected` : event.category,
           position: new window.TMap.LatLng(event.location.lat, event.location.lng),
           properties: {
             title: event.title,
@@ -103,7 +157,7 @@ const EventMap = ({
     } catch (markerError) {
       console.error('Tencent map markers failed:', markerError);
     }
-  }, [events, onEventSelect, status]);
+  }, [events, onEventSelect, selectedEvent?.id, status]);
 
   useEffect(() => {
     if (status !== 'ready' || !window.TMap || !mapInstanceRef.current) return;
