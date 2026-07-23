@@ -194,8 +194,8 @@ const EventMap = ({
   }, [scheduleOverlaySync, selectedEvent]);
 
   return (
-    <div className="relative h-full w-full">
-      <div ref={mapRef} className="ilocal-tencent-map h-full w-full overflow-hidden rounded-2xl shadow-card" />
+    <div className="relative isolate h-full w-full">
+      <div ref={mapRef} className="ilocal-tencent-map relative z-0 h-full w-full overflow-hidden rounded-2xl shadow-card" />
       {status === 'ready' && (
         <div className="pointer-events-none absolute inset-0 z-20">
           {events.map((event) => {
@@ -254,7 +254,7 @@ const EventMap = ({
         }}
         disabled={locationLoading}
         className={[
-          'pointer-events-auto absolute right-3 top-3 z-30 h-10 touch-manipulation gap-2 rounded-full border-border/80 bg-card/95 px-3 text-sm font-black text-foreground shadow-soft backdrop-blur hover:bg-card sm:right-4 sm:top-4',
+          'pointer-events-auto absolute right-3 top-3 z-40 h-10 touch-manipulation gap-2 rounded-full border-border/80 bg-card/95 px-3 text-sm font-black text-foreground shadow-soft backdrop-blur hover:bg-card sm:right-4 sm:top-4',
         ].join(' ')}
         aria-label="定位当前位置"
       >
