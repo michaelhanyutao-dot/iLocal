@@ -166,7 +166,7 @@ const EventDetail = () => {
           </div>
 
           <Card className="rounded-2xl border-border/80 bg-card p-4 shadow-none sm:p-5">
-            <h2 className="text-lg font-black text-foreground">{event.title.includes('公园') ? '朝阳公园周末市集' : event.title}</h2>
+            <h2 className="text-lg font-black text-foreground">{event.title}</h2>
             <div className="mt-3 space-y-2 text-base font-semibold text-muted-foreground">
               <p className="flex items-center gap-2">
                 <CalendarPlus className="h-5 w-5" />

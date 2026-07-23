@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -38,6 +38,7 @@ import {
   MapPin,
   Clock,
   Users,
+  Search,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -82,6 +83,7 @@ const defaultEventFormData = {
   is_free: true,
   price: 0,
   ticket_url: '',
+  cover_image: '',
   organizer: '',
   status: 'active' as 'active' | 'inactive' | 'draft'
 };
@@ -98,6 +100,9 @@ const AdminEvents = () => {
   const [loading, setLoading] = useState(true);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | Event['status']>('all');
+  const [categoryFilter, setCategoryFilter] = useState<'all' | string>('all');
   const [formData, setFormData] = useState(defaultEventFormData);
 
   const categoryOptions = [
@@ -184,6 +189,7 @@ const AdminEvents = () => {
       is_free: event.is_free,
       price: event.price || 0,
       ticket_url: event.ticket_url || '',
+      cover_image: event.cover_image || '',
       organizer: event.organizer || '',
       status: event.status as 'active' | 'inactive' | 'draft'
     });
@@ -304,6 +310,61 @@ const AdminEvents = () => {
     return option ? `${option.icon} ${option.label}` : category;
   };
 
+  const filteredEvents = useMemo(() => {
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+
+    return events.filter((event) => {
+      const matchesSearch = !normalizedSearch || [
+        event.title,
+        event.description,
+        event.address,
+        event.district,
+        event.organizer,
+      ].some((value) => (value ?? '').toLowerCase().includes(normalizedSearch));
+      const matchesStatus = statusFilter === 'all' || event.status === statusFilter;
+      const matchesCategory = categoryFilter === 'all' || event.category === categoryFilter;
+
+      return matchesSearch && matchesStatus && matchesCategory;
+    });
+  }, [categoryFilter, events, searchQuery, statusFilter]);
+
+  const eventStats = useMemo(() => {
+    return events.reduce(
+      (accumulator, event) => {
+        accumulator.total += 1;
+        if (event.status === 'active') accumulator.active += 1;
+        if (event.status === 'draft') accumulator.draft += 1;
+        if (event.status === 'inactive') accumulator.inactive += 1;
+        return accumulator;
+      },
+      { total: 0, active: 0, draft: 0, inactive: 0 },
+    );
+  }, [events]);
+
+  const handleStatusChange = async (event: Event, status: 'active' | 'inactive' | 'draft') => {
+    try {
+      const { error } = await supabase
+        .from('events')
+        .update({ status })
+        .eq('id', event.id);
+
+      if (error) throw error;
+
+      toast({
+        title: status === 'active' ? '活动已上架' : status === 'inactive' ? '活动已下架' : '活动已设为草稿',
+        description: `"${event.title}" 状态已更新`,
+      });
+      fetchEvents();
+    } catch (error) {
+      console.error('Error changing event status:', error);
+      toast({
+        title: '状态更新失败',
+        description: error instanceof Error ? error.message : '无法更新活动状态',
+        variant: 'destructive',
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-background flex items-center justify-center">
@@ -353,8 +414,56 @@ const AdminEvents = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="w-5 h-5" />
-              活动列表 ({events.length})
+              活动列表 ({filteredEvents.length}/{events.length})
             </CardTitle>
+            <CardDescription>
+              上架 {eventStats.active} · 草稿 {eventStats.draft} · 下架 {eventStats.inactive}
+            </CardDescription>
+            <div className="grid gap-3 pt-3 md:grid-cols-[minmax(220px,1fr)_180px_200px_auto]">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="搜索标题、地址、主办方..."
+                  className="pl-9"
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={(value: 'all' | Event['status']) => setStatusFilter(value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="状态" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部状态</SelectItem>
+                  <SelectItem value="active">上架</SelectItem>
+                  <SelectItem value="draft">草稿</SelectItem>
+                  <SelectItem value="inactive">下架</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="分类" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部分类</SelectItem>
+                  {categoryOptions.map((category) => (
+                    <SelectItem key={category.value} value={category.value}>
+                      {category.icon} {category.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearchQuery('');
+                  setStatusFilter('all');
+                  setCategoryFilter('all');
+                }}
+              >
+                重置
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {events.length === 0 ? (
@@ -367,11 +476,28 @@ const AdminEvents = () => {
                   创建活动
                 </Button>
               </div>
+            ) : filteredEvents.length === 0 ? (
+              <div className="text-center py-8">
+                <Search className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-lg font-semibold mb-2">没有匹配活动</h3>
+                <p className="text-muted-foreground mb-4">调整搜索词或筛选条件后再试</p>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setStatusFilter('all');
+                    setCategoryFilter('all');
+                  }}
+                >
+                  清除筛选
+                </Button>
+              </div>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>封面</TableHead>
                       <TableHead>标题</TableHead>
                       <TableHead>类别</TableHead>
                       <TableHead>日期时间</TableHead>
@@ -382,8 +508,19 @@ const AdminEvents = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {events.map((event) => (
+                    {filteredEvents.map((event) => (
                       <TableRow key={event.id}>
+                        <TableCell>
+                          <div className="h-12 w-16 overflow-hidden rounded-lg bg-secondary">
+                            {event.cover_image ? (
+                              <img src={event.cover_image} alt={event.title} className="h-full w-full object-cover" />
+                            ) : (
+                              <div className="grid h-full w-full place-items-center text-lg">
+                                {categoryOptions.find((category) => category.value === event.category)?.icon ?? '📍'}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell className="font-medium">{event.title}</TableCell>
                         <TableCell>{getCategoryLabel(event.category)}</TableCell>
                         <TableCell>
@@ -409,6 +546,23 @@ const AdminEvents = () => {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center gap-2 justify-end">
+                            {event.status === 'active' ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleStatusChange(event, 'inactive')}
+                              >
+                                下架
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleStatusChange(event, 'active')}
+                              >
+                                上架
+                              </Button>
+                            )}
                             <Button
                               variant="outline"
                               size="sm"
@@ -578,6 +732,16 @@ const AdminEvents = () => {
                   id="organizer"
                   value={formData.organizer}
                   onChange={(e) => setFormData(prev => ({ ...prev, organizer: e.target.value }))}
+                />
+              </div>
+
+              <div className="col-span-2">
+                <Label htmlFor="cover_image">封面图片 URL</Label>
+                <Input
+                  id="cover_image"
+                  value={formData.cover_image}
+                  onChange={(e) => setFormData(prev => ({ ...prev, cover_image: e.target.value }))}
+                  placeholder="https://..."
                 />
               </div>
               

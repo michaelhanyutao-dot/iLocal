@@ -22,14 +22,6 @@ const filters: { key: SavedFilter; label: string }[] = [
   { key: 'past', label: '去过' },
 ];
 
-const calendarCells = [
-  { day: 29, outside: true },
-  { day: 30, outside: true },
-  ...Array.from({ length: 31 }, (_, index) => ({ day: index + 1, outside: false })),
-  { day: 1, outside: true },
-  { day: 2, outside: true },
-];
-
 const Saved = () => {
   const [view, setView] = useState<SavedView>('list');
   const [filter, setFilter] = useState<SavedFilter>('saved');
@@ -39,23 +31,29 @@ const Saved = () => {
   const library = useEventLibrary();
   const { events } = useEvents();
   const todayKey = useMemo(() => getLocalDateKey(), []);
+  const [selectedDateKey, setSelectedDateKey] = useState(todayKey);
+  const [visibleMonth, setVisibleMonth] = useState(() => getMonthStart(todayKey));
 
   const eventsByFilter = useMemo(() => {
-    const pastCutoff = '2026-07-21';
     const byId = (ids: string[]) => events.filter((event) => ids.includes(event.id));
 
     return {
       saved: byId(library.savedIds),
       want: byId(library.likedIds),
       planned: byId(library.plannedIds),
-      past: events.filter((event) => event.date < pastCutoff && library.savedIds.includes(event.id)),
+      past: events.filter((event) => event.date < todayKey && library.savedIds.includes(event.id)),
     } satisfies Record<SavedFilter, typeof events>;
-  }, [events, library.likedIds, library.plannedIds, library.savedIds]);
+  }, [events, library.likedIds, library.plannedIds, library.savedIds, todayKey]);
 
   const visibleEvents = eventsByFilter[filter];
   const calendarEvents = eventsByFilter.planned.length > 0 ? eventsByFilter.planned : eventsByFilter.saved;
-  const eventDays = new Set(calendarEvents.map((event) => Number(event.date.slice(-2))));
-  const selectedDayEvents = calendarEvents.filter((event) => event.date === todayKey);
+  const eventDays = useMemo(() => new Set(calendarEvents.map((event) => event.date)), [calendarEvents]);
+  const monthCells = useMemo(() => getCalendarCells(visibleMonth), [visibleMonth]);
+  const monthLabel = useMemo(
+    () => visibleMonth.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+    [visibleMonth],
+  );
+  const selectedDayEvents = calendarEvents.filter((event) => event.date === selectedDateKey);
   const agendaEvents = useMemo(() => {
     const sorted = [...calendarEvents].sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
 
@@ -65,6 +63,16 @@ const Saved = () => {
     } satisfies Record<AgendaPeriod, Event[]>;
   }, [calendarEvents, todayKey]);
   const visibleAgendaEvents = agendaEvents[agendaPeriod];
+  const selectedDayLabel = selectedDateKey === todayKey ? '今天' : formatCalendarDayLabel(selectedDateKey);
+
+  const shiftVisibleMonth = (offset: number) => {
+    setVisibleMonth((current) => new Date(current.getFullYear(), current.getMonth() + offset, 1));
+  };
+
+  const returnToToday = () => {
+    setVisibleMonth(getMonthStart(todayKey));
+    setSelectedDateKey(todayKey);
+  };
 
   return (
     <AppShell>
@@ -123,26 +131,29 @@ const Saved = () => {
                 <>
                   <Card className="rounded-2xl border-border/80 bg-card p-4 shadow-none sm:p-5">
                     <div className="mb-5 flex items-center justify-between text-muted-foreground">
-                      <button type="button" className="text-2xl font-black" aria-label="上个月">‹</button>
-                      <h2 className="text-xl font-black text-foreground sm:text-[22px]">Jul 2026</h2>
-                      <button type="button" className="text-2xl font-black" aria-label="下个月">›</button>
+                      <button type="button" onClick={() => shiftVisibleMonth(-1)} className="text-2xl font-black" aria-label="上个月">‹</button>
+                      <h2 className="text-xl font-black text-foreground sm:text-[22px]">{monthLabel}</h2>
+                      <button type="button" onClick={() => shiftVisibleMonth(1)} className="text-2xl font-black" aria-label="下个月">›</button>
                     </div>
 
                     <div className="grid grid-cols-7 gap-y-3 text-center sm:gap-y-3.5">
                       {['一', '二', '三', '四', '五', '六', '日'].map((day) => (
                         <div key={day} className="text-sm font-black text-muted-foreground">{day}</div>
                       ))}
-                      {calendarCells.map((cell, index) => {
-                        const hasEvent = !cell.outside && eventDays.has(cell.day);
-                        const isToday = !cell.outside && cell.day === Number(todayKey.slice(-2));
+                      {monthCells.map((cell) => {
+                        const hasEvent = eventDays.has(cell.dateKey);
+                        const isToday = cell.dateKey === todayKey;
+                        const isSelected = cell.dateKey === selectedDateKey;
                         return (
                           <button
-                            key={`${cell.day}-${index}`}
+                            key={cell.dateKey}
                             type="button"
+                            onClick={() => setSelectedDateKey(cell.dateKey)}
                             className={[
                               'relative mx-auto grid h-10 w-10 place-items-center rounded-xl text-base font-bold sm:h-11 sm:w-11',
                               cell.outside ? 'text-muted-foreground/35' : 'text-foreground',
-                              isToday ? 'border-2 border-primary bg-secondary/50 text-primary' : '',
+                              isToday ? 'border-2 border-primary text-primary' : '',
+                              isSelected ? 'bg-secondary/75 ring-2 ring-primary/30' : '',
                             ].join(' ')}
                           >
                             {cell.day}
@@ -152,13 +163,13 @@ const Saved = () => {
                       })}
                     </div>
 
-                    <Button variant="outline" className="mt-5 h-11 w-full rounded-2xl text-sm font-black text-primary sm:h-12">
+                    <Button variant="outline" onClick={returnToToday} className="mt-5 h-11 w-full rounded-2xl text-sm font-black text-primary sm:h-12">
                       回到今天
                     </Button>
                   </Card>
 
                   <div className="space-y-3">
-                    <h2 className="text-lg font-black text-muted-foreground">今天</h2>
+                    <h2 className="text-lg font-black text-muted-foreground">{selectedDayLabel}</h2>
                     {selectedDayEvents.length === 0 ? (
                       <p className="text-xl font-bold text-muted-foreground">当天没有记录</p>
                     ) : (
@@ -271,6 +282,45 @@ const getLocalDateKey = () => {
   const month = String(now.getMonth() + 1).padStart(2, '0');
   const day = String(now.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+};
+
+const getMonthStart = (dateKey: string) => {
+  const [year, month] = dateKey.split('-').map(Number);
+  return new Date(year, month - 1, 1);
+};
+
+const getDateKey = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const getCalendarCells = (visibleMonth: Date) => {
+  const firstDay = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), 1);
+  const mondayOffset = (firstDay.getDay() + 6) % 7;
+  const startDate = new Date(firstDay);
+  startDate.setDate(firstDay.getDate() - mondayOffset);
+
+  return Array.from({ length: 42 }, (_, index) => {
+    const cellDate = new Date(startDate);
+    cellDate.setDate(startDate.getDate() + index);
+
+    return {
+      day: cellDate.getDate(),
+      dateKey: getDateKey(cellDate),
+      outside: cellDate.getMonth() !== visibleMonth.getMonth(),
+    };
+  });
+};
+
+const formatCalendarDayLabel = (dateKey: string) => {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString('zh-CN', {
+    month: 'long',
+    day: 'numeric',
+    weekday: 'short',
+  });
 };
 
 export default Saved;

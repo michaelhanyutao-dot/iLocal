@@ -18,6 +18,7 @@ import AdminEvents from "./pages/AdminEvents";
 import AdminImport from "./pages/AdminImport";
 import AdminIntake from "./pages/AdminIntake";
 import AdminTags from "./pages/AdminTags";
+import AdminUsers from "./pages/AdminUsers";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -131,6 +132,22 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <AdminTags />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/users"
+                element={
+                  <ProtectedRoute>
+                    <AdminUsers />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/users"
+                element={
+                  <ProtectedRoute>
+                    <AdminUsers />
                   </ProtectedRoute>
                 }
               />

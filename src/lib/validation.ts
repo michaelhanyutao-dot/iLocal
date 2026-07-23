@@ -70,6 +70,8 @@ export const eventSchema = z.object({
     .or(z.literal(0)),
   
   ticket_url: optionalUrl,
+
+  cover_image: optionalUrl.optional().or(z.literal('')),
   
   organizer: z.string()
     .max(200, '主办方名称不能超过 200 字符')

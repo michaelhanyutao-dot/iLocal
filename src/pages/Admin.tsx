@@ -308,7 +308,7 @@ const Admin = () => {
 
           {isAdmin && (
             <Card className="bg-gradient-card border-border/50 hover:shadow-lg transition-shadow cursor-pointer"
-                  onClick={() => toast({ title: '用户管理待接入', description: '当前阶段先保留入口，后续接入角色和用户管理列表。' })}>
+                  onClick={() => navigate(`${adminBase}/users`)}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Users className="w-5 h-5" />
