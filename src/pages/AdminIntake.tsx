@@ -16,8 +16,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getAdminBasePath } from '@/lib/adminNavigation';
 import { findEventDuplicateMatches } from '@/lib/eventDuplicates';
 import type { EventDuplicateMatch } from '@/lib/eventDuplicates';
+import { uploadEventCover } from '@/lib/eventCoverStorage';
 import { eventCategories, eventFormSchema, formatZodErrors } from '@/lib/validation';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -267,6 +269,7 @@ const AdminIntake = () => {
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingJson, setEditingJson] = useState('');
+  const [coverUploadingId, setCoverUploadingId] = useState<string | null>(null);
 
   const fetchCandidates = useCallback(async () => {
     setLoading(true);
@@ -424,6 +427,60 @@ const AdminIntake = () => {
         description: error instanceof Error ? error.message : '请检查标准化 JSON',
         variant: 'destructive',
       });
+    }
+  };
+
+  const handleUploadCandidateCover = async (candidate: Candidate, file?: File) => {
+    if (!file) return;
+
+    setCoverUploadingId(candidate.id);
+    try {
+      const publicUrl = await uploadEventCover(file, user?.id);
+      let payloadSource = asRecord(candidate.normalized_event);
+
+      if (editingId === candidate.id && editingJson.trim()) {
+        try {
+          payloadSource = asRecord(JSON.parse(editingJson) as unknown);
+        } catch {
+          payloadSource = asRecord(candidate.normalized_event);
+        }
+      }
+
+      const normalized = {
+        ...normalizeEventPayload(payloadSource),
+        cover_image: publicUrl,
+      };
+      const validation = validateNormalizedEvent(normalized);
+
+      const { error } = await supabase
+        .from('event_import_candidates')
+        .update({
+          normalized_event: toJson(normalized),
+          quality_score: validation.valid ? 1 : 0.35,
+          notes: validation.valid ? null : validation.errors.join('\n'),
+        })
+        .eq('id', candidate.id);
+
+      if (error) throw error;
+
+      if (editingId === candidate.id) {
+        setEditingJson(JSON.stringify(normalized, null, 2));
+      }
+
+      toast({
+        title: '候选封面已上传',
+        description: '图片已保存到 Supabase Storage，并写入这条线索的 cover_image',
+      });
+      await refreshData();
+    } catch (error) {
+      console.error('Candidate cover upload failed:', error);
+      toast({
+        title: '候选封面上传失败',
+        description: error instanceof Error ? error.message : '请确认 Storage bucket 和权限已创建',
+        variant: 'destructive',
+      });
+    } finally {
+      setCoverUploadingId(null);
     }
   };
 
@@ -621,6 +678,7 @@ const AdminIntake = () => {
                   editingJson={editingJson}
                   saving={saving}
                   duplicateMatches={duplicateMatchesByCandidate.get(candidate.id) ?? []}
+                  coverUploading={coverUploadingId === candidate.id}
                   onEdit={handleEditCandidate}
                   onEditingJsonChange={setEditingJson}
                   onSave={handleSaveCandidate}
@@ -631,6 +689,7 @@ const AdminIntake = () => {
                   onPublish={handlePublishCandidate}
                   onReject={(item) => handleUpdateStatus(item, 'rejected')}
                   onRestore={(item) => handleUpdateStatus(item, 'pending')}
+                  onUploadCover={handleUploadCandidateCover}
                 />
               ))}
             </div>
@@ -646,6 +705,7 @@ type CandidateCardProps = {
   editingId: string | null;
   editingJson: string;
   saving: boolean;
+  coverUploading: boolean;
   duplicateMatches: DuplicateMatch[];
   onEdit: (candidate: Candidate) => void;
   onEditingJsonChange: (value: string) => void;
@@ -654,6 +714,7 @@ type CandidateCardProps = {
   onPublish: (candidate: Candidate) => void;
   onReject: (candidate: Candidate) => void;
   onRestore: (candidate: Candidate) => void;
+  onUploadCover: (candidate: Candidate, file?: File) => void;
 };
 
 const CandidateCard = ({
@@ -661,6 +722,7 @@ const CandidateCard = ({
   editingId,
   editingJson,
   saving,
+  coverUploading,
   duplicateMatches,
   onEdit,
   onEditingJsonChange,
@@ -669,6 +731,7 @@ const CandidateCard = ({
   onPublish,
   onReject,
   onRestore,
+  onUploadCover,
 }: CandidateCardProps) => {
   const normalized = normalizeEventPayload(asRecord(candidate.normalized_event));
   const validation = validateNormalizedEvent(normalized);
@@ -715,6 +778,47 @@ const CandidateCard = ({
       </CardHeader>
 
       <CardContent className="space-y-4">
+        <div className="grid gap-3 md:grid-cols-[180px_minmax(0,1fr)]">
+          <div className="overflow-hidden rounded-2xl border border-border/70 bg-secondary/45">
+            {normalized.cover_image ? (
+              <img src={normalized.cover_image} alt={`${normalized.title || '活动'}封面`} className="h-32 w-full object-cover" />
+            ) : (
+              <div className="grid h-32 place-items-center px-4 text-center text-sm font-bold text-muted-foreground">
+                暂无封面
+              </div>
+            )}
+          </div>
+          <div className="flex flex-col justify-center gap-2 rounded-2xl border border-border/60 bg-card px-4 py-3">
+            <p className="text-sm font-black text-foreground">宣传首页图</p>
+            <p className="text-xs font-semibold text-muted-foreground">
+              从小红书或主办方页面确认图片后上传。系统会保存到 Supabase Storage，发布时自动作为活动封面。
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <label className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground">
+                <Upload className="mr-2 h-4 w-4" />
+                {coverUploading ? '上传中...' : normalized.cover_image ? '替换封面' : '上传封面'}
+                <Input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="sr-only"
+                  disabled={coverUploading}
+                  onChange={(event) => {
+                    onUploadCover(candidate, event.target.files?.[0]);
+                    event.currentTarget.value = '';
+                  }}
+                />
+              </label>
+              {normalized.cover_image && (
+                <Button asChild variant="outline" size="sm">
+                  <a href={normalized.cover_image} target="_blank" rel="noreferrer">
+                    打开图片
+                  </a>
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <InfoTile label="分类" value={normalized.category || '-'} />
           <InfoTile label="区域" value={normalized.district || '-'} />
