@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { getAdminBasePath } from '@/lib/adminNavigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -24,7 +25,9 @@ import { useToast } from '@/hooks/use-toast';
 const Admin = () => {
   const { user, signOut, isAdmin, isModerator } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+  const adminBase = getAdminBasePath(location.pathname);
   const [stats, setStats] = useState({
     totalEvents: 0,
     activeEvents: 0,
@@ -126,7 +129,7 @@ const Admin = () => {
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => navigate('/admin/events')}
+                onClick={() => navigate(`${adminBase}/events`)}
               >
                 <Eye className="w-4 h-4 mr-2" />
                 管理活动
@@ -228,7 +231,7 @@ const Admin = () => {
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Card className="bg-gradient-card border-border/50 hover:shadow-lg transition-shadow cursor-pointer"
-                onClick={() => navigate('/admin/events')}>
+                onClick={() => navigate(`${adminBase}/events`)}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="w-5 h-5" />
@@ -247,7 +250,7 @@ const Admin = () => {
           </Card>
 
           <Card className="bg-gradient-card border-border/50 hover:shadow-lg transition-shadow cursor-pointer"
-                onClick={() => navigate('/admin/intake')}>
+                onClick={() => navigate(`${adminBase}/intake`)}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ClipboardList className="w-5 h-5" />
@@ -266,7 +269,7 @@ const Admin = () => {
           </Card>
 
           <Card className="bg-gradient-card border-border/50 hover:shadow-lg transition-shadow cursor-pointer"
-                onClick={() => navigate('/admin/import')}>
+                onClick={() => navigate(`${adminBase}/import`)}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileSpreadsheet className="w-5 h-5" />
@@ -285,7 +288,7 @@ const Admin = () => {
           </Card>
 
           <Card className="bg-gradient-card border-border/50 hover:shadow-lg transition-shadow cursor-pointer"
-                onClick={() => navigate('/admin/tags')}>
+                onClick={() => navigate(`${adminBase}/tags`)}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Tag className="w-5 h-5" />
@@ -305,7 +308,7 @@ const Admin = () => {
 
           {isAdmin && (
             <Card className="bg-gradient-card border-border/50 hover:shadow-lg transition-shadow cursor-pointer"
-                  onClick={() => navigate('/admin/users')}>
+                  onClick={() => toast({ title: '用户管理待接入', description: '当前阶段先保留入口，后续接入角色和用户管理列表。' })}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Users className="w-5 h-5" />
@@ -325,7 +328,7 @@ const Admin = () => {
           )}
 
           <Card className="bg-gradient-card border-border/50 hover:shadow-lg transition-shadow cursor-pointer"
-                onClick={() => navigate('/admin/events/new')}>
+                onClick={() => navigate(`${adminBase}/events/new`)}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Plus className="w-5 h-5" />

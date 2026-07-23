@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { getAdminBasePath } from '@/lib/adminNavigation';
 import { tagSchema, formatZodErrors } from '@/lib/validation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,7 +43,9 @@ interface Tag {
 
 const AdminTags = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+  const adminBase = getAdminBasePath(location.pathname);
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingTag, setEditingTag] = useState<Tag | null>(null);
@@ -65,11 +68,7 @@ const AdminTags = () => {
     '#6366F1', // Indigo
   ];
 
-  useEffect(() => {
-    fetchTags();
-  }, []);
-
-  const fetchTags = async () => {
+  const fetchTags = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('tags')
@@ -88,7 +87,11 @@ const AdminTags = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    fetchTags();
+  }, [fetchTags]);
 
   const handleCreate = () => {
     setEditingTag(null);
@@ -231,7 +234,7 @@ const AdminTags = () => {
             <div className="flex items-center gap-4">
               <Button 
                 variant="ghost" 
-                onClick={() => navigate('/admin')}
+                onClick={() => navigate(adminBase)}
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 返回管理后台

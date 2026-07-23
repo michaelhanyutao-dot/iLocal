@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Database } from '@/integrations/supabase/types';
+import { getAdminBasePath } from '@/lib/adminNavigation';
 import { eventFormSchema, formatZodErrors } from '@/lib/validation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,19 +28,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { 
   ArrowLeft, 
   Plus, 
   Edit, 
   Trash2, 
-  Eye,
   Calendar,
   MapPin,
   Clock,
   Users,
-  Tag as TagIcon
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -71,31 +69,36 @@ interface Tag {
   color: string;
 }
 
+const defaultEventFormData = {
+  title: '',
+  description: '',
+  category: '',
+  date: '',
+  time: '',
+  address: '',
+  latitude: 0,
+  longitude: 0,
+  district: '',
+  is_free: true,
+  price: 0,
+  ticket_url: '',
+  organizer: '',
+  status: 'active' as 'active' | 'inactive' | 'draft'
+};
+
 const AdminEvents = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const { user } = useAuth();
+  const adminBase = getAdminBasePath(location.pathname);
+  const isCreateRoute = location.pathname.endsWith('/events/new');
   const [events, setEvents] = useState<Event[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    category: '',
-    date: '',
-    time: '',
-    address: '',
-    latitude: 0,
-    longitude: 0,
-    district: '',
-    is_free: true,
-    price: 0,
-    ticket_url: '',
-    organizer: '',
-    status: 'active' as 'active' | 'inactive' | 'draft'
-  });
+  const [formData, setFormData] = useState(defaultEventFormData);
 
   const categoryOptions = [
     { value: 'coffee', label: '咖啡活动', icon: '☕' },
@@ -107,12 +110,7 @@ const AdminEvents = () => {
     { value: 'sports', label: '运动活动', icon: '🏃' },
   ];
 
-  useEffect(() => {
-    fetchEvents();
-    fetchTags();
-  }, []);
-
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('events')
@@ -131,9 +129,9 @@ const AdminEvents = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  const fetchTags = async () => {
+  const fetchTags = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('tags')
@@ -144,27 +142,31 @@ const AdminEvents = () => {
     } catch (error) {
       console.error('Error fetching tags:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchEvents();
+    fetchTags();
+  }, [fetchEvents, fetchTags]);
+
+  useEffect(() => {
+    if (!isCreateRoute) return;
+    setEditingEvent(null);
+    setFormData(defaultEventFormData);
+    setIsDialogOpen(true);
+  }, [isCreateRoute]);
 
   const handleCreate = () => {
     setEditingEvent(null);
-    setFormData({
-      title: '',
-      description: '',
-      category: '',
-      date: '',
-      time: '',
-      address: '',
-      latitude: 0,
-      longitude: 0,
-      district: '',
-      is_free: true,
-      price: 0,
-      ticket_url: '',
-      organizer: '',
-      status: 'active'
-    });
+    setFormData(defaultEventFormData);
     setIsDialogOpen(true);
+  };
+
+  const handleDialogOpenChange = (open: boolean) => {
+    setIsDialogOpen(open);
+    if (!open && isCreateRoute) {
+      navigate(`${adminBase}/events`, { replace: true });
+    }
   };
 
   const handleEdit = (event: Event) => {
@@ -241,6 +243,9 @@ const AdminEvents = () => {
       }
 
       setIsDialogOpen(false);
+      if (isCreateRoute) {
+        navigate(`${adminBase}/events`, { replace: true });
+      }
       fetchEvents();
     } catch (error) {
       console.error('Error saving event:', error);
@@ -319,7 +324,7 @@ const AdminEvents = () => {
             <div className="flex items-center gap-4">
               <Button 
                 variant="ghost" 
-                onClick={() => navigate('/admin')}
+                onClick={() => navigate(adminBase)}
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 返回管理后台
@@ -330,7 +335,7 @@ const AdminEvents = () => {
             </div>
             
             <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={() => navigate('/admin/import')}>
+              <Button variant="outline" onClick={() => navigate(`${adminBase}/import`)}>
                 批量导入
               </Button>
               <Button onClick={handleCreate}>
@@ -432,7 +437,7 @@ const AdminEvents = () => {
       </div>
 
       {/* Edit/Create Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>

@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, FileSpreadsheet, Upload, XCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import type { TablesInsert } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { getAdminBasePath } from '@/lib/adminNavigation';
 import { eventFormSchema, eventCategories } from '@/lib/validation';
 import { formatZodErrors } from '@/lib/validation';
 import { Button } from '@/components/ui/button';
@@ -28,8 +29,10 @@ const requiredHeaders = ['title', 'category', 'date', 'time', 'address', 'latitu
 
 const AdminImport = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
+  const adminBase = getAdminBasePath(location.pathname);
   const [csvText, setCsvText] = useState(sampleCsv);
   const [importing, setImporting] = useState(false);
   const [lastResult, setLastResult] = useState<string | null>(null);
@@ -111,7 +114,7 @@ const AdminImport = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <Button variant="ghost" onClick={() => navigate('/admin')}>
+              <Button variant="ghost" onClick={() => navigate(adminBase)}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 返回管理后台
               </Button>

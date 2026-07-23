@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   CheckCircle2,
@@ -13,6 +13,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import type { Json, Tables, TablesInsert } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { getAdminBasePath } from '@/lib/adminNavigation';
 import { eventCategories, eventFormSchema, formatZodErrors } from '@/lib/validation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -52,32 +53,207 @@ const statusLabels: Record<CandidateStatus, string> = {
   rejected: '已拒绝',
 };
 
-const sampleJson = `[
+const beijingSampleEvents = [
   {
-    "source_platform": "xiaohongshu",
-    "source_url": "https://www.xiaohongshu.com/explore/demo",
-    "source_title": "北京周末小众展览合集",
-    "title": "胡同夜游摄影散步",
-    "description": "跟随本地摄影师穿过东城胡同，记录夏夜街景。",
-    "category": "exhibition",
-    "date": "2026-08-03",
-    "time": "19:30",
-    "address": "北京市东城区五道营胡同",
-    "latitude": 39.9498,
-    "longitude": 116.4142,
-    "district": "东城区",
-    "is_free": false,
-    "price": 68,
-    "organizer": "北京城市漫游",
-    "status": "active",
-    "tags": ["摄影", "胡同", "城市漫游"]
-  }
-]`;
+    source_platform: 'manual',
+    source_url: '',
+    source_title: '北京 demo 活动样本',
+    title: '胡同夜游摄影散步',
+    description: '跟随本地摄影师穿过东城胡同，记录夏夜街景与小店灯光。',
+    category: 'exhibition',
+    date: '2026-07-26',
+    time: '19:30',
+    address: '北京市东城区五道营胡同',
+    latitude: 39.9498,
+    longitude: 116.4142,
+    district: '东城区',
+    is_free: false,
+    price: 68,
+    organizer: '北京城市漫游',
+    status: 'active',
+    tags: ['摄影', '胡同', '城市漫游'],
+  },
+  {
+    source_platform: 'manual',
+    source_url: '',
+    source_title: '北京 demo 活动样本',
+    title: '三里屯独立乐队现场',
+    description: '三支本地独立乐队轮番演出，适合下班后和朋友一起去听。',
+    category: 'music',
+    date: '2026-07-31',
+    time: '20:00',
+    address: '北京市朝阳区工体北路8号三里屯SOHO',
+    latitude: 39.9365,
+    longitude: 116.4542,
+    district: '朝阳区',
+    is_free: false,
+    price: 120,
+    organizer: '三里屯现场计划',
+    status: 'active',
+    tags: ['独立音乐', '现场演出', '三里屯'],
+  },
+  {
+    source_platform: 'manual',
+    source_url: '',
+    source_title: '北京 demo 活动样本',
+    title: '亮马河周末咖啡市集',
+    description: '本地烘焙品牌集合，含手冲体验、甜点摊位和露天座位。',
+    category: 'coffee',
+    date: '2026-08-01',
+    time: '14:00',
+    address: '北京市朝阳区亮马河国际风情水岸',
+    latitude: 39.9504,
+    longitude: 116.4686,
+    district: '朝阳区',
+    is_free: true,
+    price: 0,
+    organizer: '亮马河生活节',
+    status: 'active',
+    tags: ['咖啡', '市集', '周末'],
+  },
+  {
+    source_platform: 'manual',
+    source_url: '',
+    source_title: '北京 demo 活动样本',
+    title: '798 夏日晚间艺术展',
+    description: '当代艺术展夜间延时开放，包含导览和小型影像放映。',
+    category: 'exhibition',
+    date: '2026-08-02',
+    time: '18:30',
+    address: '北京市朝阳区酒仙桥路4号798艺术区',
+    latitude: 39.9841,
+    longitude: 116.4956,
+    district: '朝阳区',
+    is_free: false,
+    price: 88,
+    organizer: '798艺术区',
+    status: 'active',
+    tags: ['当代艺术', '夜场', '展览'],
+  },
+  {
+    source_platform: 'manual',
+    source_url: '',
+    source_title: '北京 demo 活动样本',
+    title: '朝阳公园草坪飞盘局',
+    description: '面向新手的轻量飞盘活动，现场分组，有基础规则说明。',
+    category: 'sports',
+    date: '2026-08-08',
+    time: '16:30',
+    address: '北京市朝阳区朝阳公园南路1号',
+    latitude: 39.9337,
+    longitude: 116.4781,
+    district: '朝阳区',
+    is_free: false,
+    price: 39,
+    organizer: '城市运动小队',
+    status: 'active',
+    tags: ['飞盘', '户外', '新手友好'],
+  },
+  {
+    source_platform: 'manual',
+    source_url: '',
+    source_title: '北京 demo 活动样本',
+    title: '前门老街手作市集',
+    description: '独立设计、手作饰品、复古小物和本地小吃摊位集合。',
+    category: 'market',
+    date: '2026-08-09',
+    time: '11:00',
+    address: '北京市东城区前门大街',
+    latitude: 39.8993,
+    longitude: 116.3972,
+    district: '东城区',
+    is_free: true,
+    price: 0,
+    organizer: '前门生活方式市集',
+    status: 'active',
+    tags: ['手作', '复古', '市集'],
+  },
+  {
+    source_platform: 'manual',
+    source_url: '',
+    source_title: '北京 demo 活动样本',
+    title: '国子监书店读书夜',
+    description: '围绕城市旅行与生活方式书籍的分享会，含自由交流时间。',
+    category: 'coffee',
+    date: '2026-08-12',
+    time: '19:00',
+    address: '北京市东城区国子监街',
+    latitude: 39.9489,
+    longitude: 116.4116,
+    district: '东城区',
+    is_free: false,
+    price: 49,
+    organizer: '胡同书友会',
+    status: 'active',
+    tags: ['读书会', '咖啡', '交流'],
+  },
+  {
+    source_platform: 'manual',
+    source_url: '',
+    source_title: '北京 demo 活动样本',
+    title: '五棵松露台夏日派对',
+    description: 'DJ、轻食和露台社交，适合想认识新朋友的周末夜晚。',
+    category: 'party',
+    date: '2026-08-15',
+    time: '20:30',
+    address: '北京市海淀区复兴路69号华熙LIVE',
+    latitude: 39.9126,
+    longitude: 116.2805,
+    district: '海淀区',
+    is_free: false,
+    price: 99,
+    organizer: 'Weekend Social Club',
+    status: 'active',
+    tags: ['派对', 'DJ', '社交'],
+  },
+  {
+    source_platform: 'manual',
+    source_url: '',
+    source_title: '北京 demo 活动样本',
+    title: '鼓楼爵士酒吧即兴夜',
+    description: '本地爵士音乐人开放 Jam Session，现场提供精酿与小食。',
+    category: 'bar',
+    date: '2026-08-16',
+    time: '21:30',
+    address: '北京市西城区旧鼓楼大街',
+    latitude: 39.9442,
+    longitude: 116.3896,
+    district: '西城区',
+    is_free: false,
+    price: 78,
+    organizer: '鼓楼夜声',
+    status: 'active',
+    tags: ['爵士', '酒吧', 'Jam'],
+  },
+  {
+    source_platform: 'manual',
+    source_url: '',
+    source_title: '北京 demo 活动样本',
+    title: '首钢园城市骑行集合',
+    description: '从首钢园出发的轻松骑行路线，适合周末低强度运动。',
+    category: 'sports',
+    date: '2026-08-22',
+    time: '09:00',
+    address: '北京市石景山区石景山路68号首钢园',
+    latitude: 39.9121,
+    longitude: 116.1695,
+    district: '石景山区',
+    is_free: true,
+    price: 0,
+    organizer: '北京轻骑计划',
+    status: 'active',
+    tags: ['骑行', '首钢园', '户外'],
+  },
+];
+
+const sampleJson = JSON.stringify(beijingSampleEvents, null, 2);
 
 const AdminIntake = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
+  const adminBase = getAdminBasePath(location.pathname);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [jsonText, setJsonText] = useState(sampleJson);
   const [selectedStatus, setSelectedStatus] = useState<CandidateStatus>('pending');
@@ -303,7 +479,7 @@ const AdminIntake = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <Button variant="ghost" onClick={() => navigate('/admin')}>
+              <Button variant="ghost" onClick={() => navigate(adminBase)}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 返回管理后台
               </Button>
@@ -332,6 +508,14 @@ const AdminIntake = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="outline" onClick={() => setJsonText(sampleJson)}>
+                载入北京样本
+              </Button>
+              <Button type="button" variant="ghost" onClick={() => setJsonText('')}>
+                清空
+              </Button>
+            </div>
             <Textarea
               value={jsonText}
               onChange={(event) => setJsonText(event.target.value)}
