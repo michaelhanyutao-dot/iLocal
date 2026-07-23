@@ -95,12 +95,12 @@ After that, use `/dashboard/users` to add moderators or additional admins.
 
 ## Duplicate Checks
 
-The intake queue warns and blocks publishing when it finds an existing formal event with:
+The intake queue and CSV import preview warn and block publishing/importing when they find an existing formal event with:
 
 - the same normalized title and same date, or
 - the same normalized address, same date, and same time.
 
-If the warning is a false positive, edit the candidate's title, date, time, or address before publishing.
+If the warning is a false positive, edit the candidate or CSV row's title, date, time, or address before publishing/importing.
 
 ## Public QA Checklist
 

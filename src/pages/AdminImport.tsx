@@ -1,10 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, FileSpreadsheet, Upload, XCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import type { TablesInsert } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAdminBasePath } from '@/lib/adminNavigation';
+import { findEventDuplicateMatches } from '@/lib/eventDuplicates';
+import type { DuplicateComparableEvent, EventDuplicateMatch } from '@/lib/eventDuplicates';
 import { eventFormSchema, eventCategories } from '@/lib/validation';
 import { formatZodErrors } from '@/lib/validation';
 import { Button } from '@/components/ui/button';
@@ -21,6 +23,15 @@ type ParsedImportRow = {
   errors: string[];
 };
 
+type PublishedEvent = DuplicateComparableEvent & {
+  id: string;
+  status: string;
+};
+
+type PreviewImportRow = ParsedImportRow & {
+  duplicateMatches: EventDuplicateMatch<PublishedEvent>[];
+};
+
 const sampleCsv = `title,description,category,date,time,address,latitude,longitude,district,is_free,price,organizer,status,tags
 周五咖啡杯测,本地烘焙师带你认识不同产区咖啡,coffee,2026-07-31,15:00,北京市朝阳区三里屯太古里,39.936500,116.454200,朝阳区,true,,三里屯咖啡社,active,咖啡|杯测|三里屯
 夏夜露台爵士,露台小型爵士演出与自然酒,bar,2026-08-01,20:30,北京市东城区雍和宫大街,39.947300,116.417900,东城区,false,88,夜色音乐,active,爵士|自然酒`;
@@ -34,13 +45,40 @@ const AdminImport = () => {
   const { toast } = useToast();
   const adminBase = getAdminBasePath(location.pathname);
   const [csvText, setCsvText] = useState(sampleCsv);
+  const [publishedEvents, setPublishedEvents] = useState<PublishedEvent[]>([]);
   const [importing, setImporting] = useState(false);
   const [lastResult, setLastResult] = useState<string | null>(null);
 
   const parsedRows = useMemo(() => parseImportCsv(csvText, user?.id), [csvText, user?.id]);
-  const validRows = parsedRows.filter((row) => row.event);
+  const previewRows = useMemo<PreviewImportRow[]>(() => {
+    return parsedRows.map((row) => ({
+      ...row,
+      duplicateMatches: row.event ? findEventDuplicateMatches(row.event, publishedEvents) : [],
+    }));
+  }, [parsedRows, publishedEvents]);
+  const validRows = previewRows.filter((row) => row.event && row.duplicateMatches.length === 0);
   const invalidRows = parsedRows.filter((row) => !row.event);
+  const duplicateRows = previewRows.filter((row) => row.duplicateMatches.length > 0);
   const missingHeaders = getMissingHeaders(csvText);
+
+  const fetchPublishedEvents = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('events')
+      .select('id, title, date, time, address, status')
+      .order('date', { ascending: false })
+      .limit(500);
+
+    if (error) {
+      console.error('Error fetching events for CSV duplicate checks:', error);
+      return;
+    }
+
+    setPublishedEvents(data ?? []);
+  }, []);
+
+  useEffect(() => {
+    fetchPublishedEvents();
+  }, [fetchPublishedEvents]);
 
   const handleImport = async () => {
     if (missingHeaders.length > 0 || validRows.length === 0) return;
@@ -92,6 +130,7 @@ const AdminImport = () => {
       }
 
       setLastResult(`已成功导入 ${insertedEvents?.length ?? 0} 个活动`);
+      await fetchPublishedEvents();
       toast({
         title: '批量导入成功',
         description: `已写入 ${insertedEvents?.length ?? 0} 个活动`,
@@ -139,7 +178,7 @@ const AdminImport = () => {
               CSV 内容
             </CardTitle>
             <CardDescription>
-              必填列：title, category, date, time, address, latitude, longitude。tags 用竖线分隔。
+              必填列：title, category, date, time, address, latitude, longitude。tags 用竖线分隔，重复行不会导入。
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -169,8 +208,9 @@ const AdminImport = () => {
               <CardDescription>先校验，后写入。无效行不会导入。</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <PreviewStat label="可导入" value={validRows.length} tone="ok" />
+                <PreviewStat label="疑似重复" value={duplicateRows.length} tone="warn" />
                 <PreviewStat label="需修正" value={invalidRows.length} tone="error" />
               </div>
               <div className="space-y-2">
@@ -194,12 +234,14 @@ const AdminImport = () => {
               {parsedRows.length === 0 ? (
                 <p className="text-sm text-muted-foreground">暂无可预览内容</p>
               ) : (
-                parsedRows.map((row) => (
+                previewRows.map((row) => (
                   <div key={row.index} className="rounded-xl border border-border/60 bg-card p-3">
                     <div className="mb-2 flex items-center justify-between gap-2">
                       <span className="text-sm font-bold">第 {row.index} 行</span>
-                      {row.event ? (
+                      {row.event && row.duplicateMatches.length === 0 ? (
                         <CheckCircle2 className="h-4 w-4 text-primary" />
+                      ) : row.duplicateMatches.length > 0 ? (
+                        <XCircle className="h-4 w-4 text-amber-600" />
                       ) : (
                         <XCircle className="h-4 w-4 text-destructive" />
                       )}
@@ -214,6 +256,15 @@ const AdminImport = () => {
                         ))}
                       </ul>
                     )}
+                    {row.duplicateMatches.length > 0 && (
+                      <div className="mt-2 space-y-1 text-xs font-semibold text-amber-700">
+                        {row.duplicateMatches.map((match) => (
+                          <p key={`${match.event.id}-${match.reason}`}>
+                            疑似重复：{match.event.title} · {match.reason}
+                          </p>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))
               )}
@@ -225,10 +276,15 @@ const AdminImport = () => {
   );
 };
 
-const PreviewStat = ({ label, value, tone }: { label: string; value: number; tone: 'ok' | 'error' }) => (
+const PreviewStat = ({ label, value, tone }: { label: string; value: number; tone: 'ok' | 'warn' | 'error' }) => (
   <div className="rounded-xl border border-border/60 bg-card p-4">
     <p className="text-sm font-semibold text-muted-foreground">{label}</p>
-    <p className={['mt-1 text-3xl font-black', tone === 'ok' ? 'text-primary' : 'text-destructive'].join(' ')}>
+    <p
+      className={[
+        'mt-1 text-3xl font-black',
+        tone === 'ok' ? 'text-primary' : tone === 'warn' ? 'text-amber-600' : 'text-destructive',
+      ].join(' ')}
+    >
       {value}
     </p>
   </div>

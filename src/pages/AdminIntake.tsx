@@ -14,6 +14,8 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Json, Tables, TablesInsert } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAdminBasePath } from '@/lib/adminNavigation';
+import { findEventDuplicateMatches } from '@/lib/eventDuplicates';
+import type { EventDuplicateMatch } from '@/lib/eventDuplicates';
 import { eventCategories, eventFormSchema, formatZodErrors } from '@/lib/validation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -45,10 +47,7 @@ type NormalizedEvent = {
   tags: string[];
 };
 
-type DuplicateMatch = {
-  event: PublishedEvent;
-  reason: string;
-};
+type DuplicateMatch = EventDuplicateMatch<PublishedEvent>;
 
 const sourcePlatforms: SourcePlatform[] = ['xiaohongshu', 'manual', 'wechat', 'instagram', 'website', 'other'];
 
@@ -336,7 +335,7 @@ const AdminIntake = () => {
     return new Map(
       candidates.map((candidate) => [
         candidate.id,
-        findDuplicateEvents(normalizeEventPayload(asRecord(candidate.normalized_event)), publishedEvents),
+        findEventDuplicateMatches(normalizeEventPayload(asRecord(candidate.normalized_event)), publishedEvents),
       ]),
     );
   }, [candidates, publishedEvents]);
@@ -454,7 +453,7 @@ const AdminIntake = () => {
   const handlePublishCandidate = async (candidate: Candidate) => {
     const normalized = normalizeEventPayload(asRecord(candidate.normalized_event));
     const validation = validateNormalizedEvent(normalized);
-    const duplicateMatches = findDuplicateEvents(normalized, publishedEvents);
+    const duplicateMatches = findEventDuplicateMatches(normalized, publishedEvents);
 
     if (!validation.valid) {
       toast({
@@ -823,28 +822,6 @@ const StatusBadge = ({ status }: { status: string }) => {
   return <Badge className="rounded-full">{label}</Badge>;
 };
 
-const findDuplicateEvents = (event: NormalizedEvent, publishedEvents: PublishedEvent[]): DuplicateMatch[] => {
-  if (!event.title || !event.date) return [];
-
-  const titleKey = normalizeComparable(event.title);
-  const addressKey = normalizeComparable(event.address);
-  const timeKey = normalizeTime(event.time);
-
-  return publishedEvents
-    .map((publishedEvent) => {
-      const sameTitleAndDate = normalizeComparable(publishedEvent.title) === titleKey && publishedEvent.date === event.date;
-      const samePlaceAndTime = Boolean(addressKey)
-        && normalizeComparable(publishedEvent.address) === addressKey
-        && publishedEvent.date === event.date
-        && normalizeTime(String(publishedEvent.time).slice(0, 5)) === timeKey;
-
-      if (sameTitleAndDate) return { event: publishedEvent, reason: '同标题同日期' };
-      if (samePlaceAndTime) return { event: publishedEvent, reason: '同日期同时间同地址' };
-      return null;
-    })
-    .filter((match): match is DuplicateMatch => Boolean(match));
-};
-
 const validateNormalizedEvent = (event: NormalizedEvent) => {
   const result = eventFormSchema.safeParse({
     title: event.title,
@@ -980,13 +957,6 @@ const normalizeTime = (value: string) => {
   if (!match) return trimmed;
   return `${match[1].padStart(2, '0')}:${match[2]}`;
 };
-
-const normalizeComparable = (value: string) =>
-  value
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, '')
-    .replace(/[，,。.\-—_·]/g, '');
 
 const normalizeTags = (value: unknown) => {
   if (Array.isArray(value)) {
