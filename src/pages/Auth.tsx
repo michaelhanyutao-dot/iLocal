@@ -34,7 +34,7 @@ const Auth = () => {
         title: "登录成功",
         description: "欢迎回来！",
       });
-      navigate('/admin');
+      navigate('/dashboard');
     }
     setLoading(false);
   };

@@ -312,7 +312,7 @@ const getPostLoginPath = async () => {
   }
 
   const roleNames = roles?.map((row) => row.role) ?? [];
-  return roleNames.includes('admin') || roleNames.includes('moderator') ? '/admin' : '/me';
+  return roleNames.includes('admin') || roleNames.includes('moderator') ? '/dashboard' : '/me';
 };
 
 export default Login;

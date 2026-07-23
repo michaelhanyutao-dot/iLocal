@@ -71,11 +71,11 @@ const Profile = () => {
             label="收藏与到访"
             onClick={() => navigate('/saved')}
           />
-          {(isAdmin || isModerator) && (
+          {isLoggedIn && (
             <ProfileRow
               icon={<ShieldCheck className="h-5 w-5" />}
-              label="活动后台"
-              onClick={() => navigate('/admin')}
+              label={isAdmin || isModerator ? '运营后台' : '运营后台'}
+              onClick={() => navigate('/dashboard')}
             />
           )}
         </section>

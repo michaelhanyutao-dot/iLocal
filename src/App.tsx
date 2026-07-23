@@ -41,23 +41,63 @@ const App = () => (
               <Route 
                 path="/admin" 
                 element={
-                  <ProtectedRoute requireAdmin={true}>
+                  <ProtectedRoute>
                     <Admin />
                   </ProtectedRoute>
                 } 
               />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Admin />
+                  </ProtectedRoute>
+                }
+              />
               <Route 
                 path="/admin/events" 
                 element={
-                  <ProtectedRoute requireAdmin={true}>
+                  <ProtectedRoute>
                     <AdminEvents />
                   </ProtectedRoute>
                 } 
               />
               <Route
+                path="/admin/events/new"
+                element={
+                  <ProtectedRoute>
+                    <AdminEvents />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/events"
+                element={
+                  <ProtectedRoute>
+                    <AdminEvents />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/events/new"
+                element={
+                  <ProtectedRoute>
+                    <AdminEvents />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/admin/import"
                 element={
-                  <ProtectedRoute requireAdmin={true}>
+                  <ProtectedRoute>
+                    <AdminImport />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/import"
+                element={
+                  <ProtectedRoute>
                     <AdminImport />
                   </ProtectedRoute>
                 }
@@ -65,7 +105,15 @@ const App = () => (
               <Route
                 path="/admin/intake"
                 element={
-                  <ProtectedRoute requireAdmin={true}>
+                  <ProtectedRoute>
+                    <AdminIntake />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/intake"
+                element={
+                  <ProtectedRoute>
                     <AdminIntake />
                   </ProtectedRoute>
                 }
@@ -73,10 +121,18 @@ const App = () => (
               <Route
                 path="/admin/tags" 
                 element={
-                  <ProtectedRoute requireAdmin={true}>
+                  <ProtectedRoute>
                     <AdminTags />
                   </ProtectedRoute>
                 } 
+              />
+              <Route
+                path="/dashboard/tags"
+                element={
+                  <ProtectedRoute>
+                    <AdminTags />
+                  </ProtectedRoute>
+                }
               />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

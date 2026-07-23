@@ -111,7 +111,7 @@ const Admin = () => {
               </Button>
               <div>
                 <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                  后台管理
+                  运营 Dashboard
                 </h1>
                 <p className="text-sm text-muted-foreground">
                   欢迎, {user?.email}
@@ -213,6 +213,17 @@ const Admin = () => {
             </CardContent>
           </Card>
         </div>
+
+        {!isAdmin && !isModerator && (
+          <Card className="mb-8 border-amber-300/60 bg-amber-50 text-amber-950">
+            <CardContent className="py-4">
+              <p className="text-sm font-semibold">
+                你已进入运营台。当前前端没有识别到 admin/moderator 角色；活动保存、候选池发布等写入动作仍由 Supabase RLS 控制。
+                如果操作失败，需要在 user_roles 表里给当前账号分配 admin 或 moderator。
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
