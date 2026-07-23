@@ -28,7 +28,7 @@ const categoryLabels: Record<string, string> = {
   music: '音乐',
   market: '市集',
   party: '派对',
-  exhibition: '活动',
+  exhibition: '展览',
   bar: '酒吧',
   sports: '运动',
 };
@@ -231,8 +231,8 @@ const EventDetail = () => {
 
       <Dialog open={shareOpen} onOpenChange={setShareOpen}>
         <DialogContent className="max-w-[340px] rounded-2xl p-5 sm:max-w-[380px] sm:p-6">
-          <h2 className="text-xl font-black">Share {event.title}</h2>
-          <p className="mt-3 text-base font-semibold text-muted-foreground">Send this link to friends so they can check it out.</p>
+          <h2 className="text-xl font-black">分享 {event.title}</h2>
+          <p className="mt-3 text-base font-semibold text-muted-foreground">把这个链接发给朋友，一起看看这个活动。</p>
           <div className="mt-6 flex items-center gap-3 rounded-2xl bg-muted p-4">
             <CornerUpRight className="h-5 w-5 shrink-0 text-muted-foreground" />
             <span className="min-w-0 flex-1 truncate text-base font-semibold">{shareUrl}</span>
@@ -245,7 +245,7 @@ const EventDetail = () => {
                 toast({ title: '分享链接已复制' });
               }}
             >
-              Copy
+              复制
             </Button>
           </div>
         </DialogContent>

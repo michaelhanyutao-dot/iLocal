@@ -1,73 +1,58 @@
-# Welcome to your Lovable project
+# iLocal
 
-## Project info
+iLocal is a mobile-first local activity discovery app. The current MVP supports public discovery, event detail pages, saved/planned events, Tencent Maps integration, and an operator dashboard for activity management.
 
-**URL**: https://lovable.dev/projects/4089ed67-2e49-4c72-a430-cd30286a0b70
+## Stack
 
-## How can I edit this code?
+- React + Vite + TypeScript
+- Tailwind CSS + shadcn/ui
+- Supabase Auth, Postgres, and RLS
+- Tencent Maps JavaScript SDK
+- Vercel deployment
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/4089ed67-2e49-4c72-a430-cd30286a0b70) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+## Local Development
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
-**Edit a file directly in GitHub**
+Useful checks:
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```sh
+pnpm run lint
+pnpm run build
+```
 
-**Use GitHub Codespaces**
+## Main Routes
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+- `/` public Explore page
+- `/event/:id` event detail
+- `/saved` saved list and calendar
+- `/me` profile
+- `/auth` operator login/register
+- `/dashboard` operator dashboard
+- `/dashboard/events` activity management
+- `/dashboard/intake` event candidate review queue
+- `/dashboard/import` CSV batch import
+- `/dashboard/tags` tag management
+- `/dashboard/users` role management
 
-## What technologies are used for this project?
+## Environment Variables
 
-This project is built with:
+Set these locally in `.env.local` and in Vercel:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```sh
+VITE_SUPABASE_URL=
+VITE_SUPABASE_PUBLISHABLE_KEY=
+VITE_TENCENT_MAP_KEY=
+VITE_TENCENT_MAP_REFERER=
+```
 
-## How can I deploy this project?
+## Operations
 
-Simply open [Lovable](https://lovable.dev/projects/4089ed67-2e49-4c72-a430-cd30286a0b70) and click on Share -> Publish.
+See [docs/OPERATIONS.md](docs/OPERATIONS.md) for the current operating checklist: first admin setup, daily content workflow, candidate intake format, QA checklist, and deployment notes.
 
-## Can I connect a custom domain to my Lovable project?
+## Deployment
 
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Push to `main`; Vercel deploys the production app automatically.
