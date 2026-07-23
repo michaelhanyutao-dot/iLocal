@@ -103,6 +103,7 @@ After that, use `/dashboard/users` to add moderators or additional admins, send 
 - Title should be short enough for mobile cards.
 - Date must be `YYYY-MM-DD`; time must be `HH:mm`.
 - Latitude and longitude should point to the actual venue, not just the district.
+- Use Tencent/GCJ-02 coordinates for event locations. Browser user location is converted before rendering, but event data should not mix WGS84, Baidu BD-09, or rough district-center coordinates.
 - Use `draft` when the source is incomplete, `active` when ready to publish, and `inactive` to take an event down.
 - Prefer official ticket or venue links for `ticket_url`.
 - Upload a cover image in `/dashboard/events/new`, or paste a real event/venue image URL into `cover_image`; if empty, the app falls back to category artwork.
