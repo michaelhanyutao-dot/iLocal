@@ -24,6 +24,9 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 
 type Candidate = Tables<'event_import_candidates'>;
@@ -920,11 +923,10 @@ const CandidateCard = ({
 
         {isEditing && (
           <div className="space-y-3 rounded-xl border border-border/60 bg-card p-3">
-            <Textarea
-              value={editingJson}
-              onChange={(event) => onEditingJsonChange(event.target.value)}
-              className="min-h-[260px] font-mono text-sm"
-              spellCheck={false}
+            <CandidateStructuredEditor
+              editingJson={editingJson}
+              fallbackEvent={normalized}
+              onChange={onEditingJsonChange}
             />
             <div className="flex flex-wrap gap-2">
               <Button onClick={() => onSave(candidate)}>保存标准化内容</Button>
@@ -962,6 +964,306 @@ const CandidateCard = ({
         </div>
       </CardContent>
     </Card>
+  );
+};
+
+type CandidateStructuredEditorProps = {
+  editingJson: string;
+  fallbackEvent: NormalizedEvent;
+  onChange: (value: string) => void;
+};
+
+const CandidateStructuredEditor = ({ editingJson, fallbackEvent, onChange }: CandidateStructuredEditorProps) => {
+  const parsedEvent = useMemo(() => {
+    try {
+      return normalizeEventPayload(asRecord(JSON.parse(editingJson) as unknown));
+    } catch {
+      return fallbackEvent;
+    }
+  }, [editingJson, fallbackEvent]);
+
+  const updateField = (field: keyof NormalizedEvent, value: unknown) => {
+    let source = parsedEvent as NormalizedEvent;
+    try {
+      source = normalizeEventPayload(asRecord(JSON.parse(editingJson) as unknown));
+    } catch {
+      source = parsedEvent;
+    }
+
+    const nextEvent = normalizeEventPayload({
+      ...source,
+      [field]: value,
+    });
+    onChange(JSON.stringify(nextEvent, null, 2));
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-4 rounded-xl border border-border/60 bg-secondary/20 p-4 md:grid-cols-2">
+        <div className="md:col-span-2">
+          <Label htmlFor="candidate-title">活动标题 *</Label>
+          <Input
+            id="candidate-title"
+            value={parsedEvent.title}
+            onChange={(event) => updateField('title', event.target.value)}
+          />
+        </div>
+
+        <div className="md:col-span-2">
+          <Label htmlFor="candidate-description">活动描述</Label>
+          <Textarea
+            id="candidate-description"
+            value={parsedEvent.description}
+            rows={3}
+            onChange={(event) => updateField('description', event.target.value)}
+          />
+        </div>
+
+        <div>
+          <Label>分类 *</Label>
+          <Select value={parsedEvent.category || undefined} onValueChange={(value) => updateField('category', value)}>
+            <SelectTrigger>
+              <SelectValue placeholder="选择分类" />
+            </SelectTrigger>
+            <SelectContent>
+              {eventCategories.map((category) => (
+                <SelectItem key={category} value={category}>
+                  {category}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label>发布状态</Label>
+          <Select value={parsedEvent.status} onValueChange={(value) => updateField('status', value)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="active">上架</SelectItem>
+              <SelectItem value="draft">草稿</SelectItem>
+              <SelectItem value="inactive">下架</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label htmlFor="candidate-date">日期 *</Label>
+          <Input
+            id="candidate-date"
+            type="date"
+            value={parsedEvent.date}
+            onChange={(event) => updateField('date', event.target.value)}
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="candidate-time">时间 *</Label>
+          <Input
+            id="candidate-time"
+            type="time"
+            value={parsedEvent.time}
+            onChange={(event) => updateField('time', event.target.value)}
+          />
+        </div>
+
+        <div className="md:col-span-2">
+          <Label htmlFor="candidate-address">地址 *</Label>
+          <Input
+            id="candidate-address"
+            value={parsedEvent.address}
+            onChange={(event) => updateField('address', event.target.value)}
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="candidate-latitude">纬度</Label>
+          <Input
+            id="candidate-latitude"
+            type="number"
+            step="0.000001"
+            value={parsedEvent.latitude}
+            onChange={(event) => updateField('latitude', Number(event.target.value))}
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="candidate-longitude">经度</Label>
+          <Input
+            id="candidate-longitude"
+            type="number"
+            step="0.000001"
+            value={parsedEvent.longitude}
+            onChange={(event) => updateField('longitude', Number(event.target.value))}
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="candidate-district">区域</Label>
+          <Input
+            id="candidate-district"
+            value={parsedEvent.district}
+            onChange={(event) => updateField('district', event.target.value)}
+          />
+        </div>
+
+        <div>
+          <Label>位置可信度</Label>
+          <Select value={parsedEvent.location_accuracy} onValueChange={(value) => updateField('location_accuracy', value)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(locationAccuracyLabels).map(([value, label]) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="md:col-span-2">
+          <Label htmlFor="candidate-location-note">位置备注</Label>
+          <Textarea
+            id="candidate-location-note"
+            value={parsedEvent.location_note}
+            rows={2}
+            onChange={(event) => updateField('location_note', event.target.value)}
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Switch
+            id="candidate-free"
+            checked={parsedEvent.is_free}
+            onCheckedChange={(checked) => updateField('is_free', checked)}
+          />
+          <Label htmlFor="candidate-free">免费活动</Label>
+        </div>
+
+        {!parsedEvent.is_free && (
+          <div>
+            <Label htmlFor="candidate-price">票价</Label>
+            <Input
+              id="candidate-price"
+              type="number"
+              min="0"
+              value={parsedEvent.price}
+              onChange={(event) => updateField('price', Number(event.target.value))}
+            />
+          </div>
+        )}
+
+        <div className={parsedEvent.is_free ? 'md:col-span-2' : ''}>
+          <Label htmlFor="candidate-organizer">主办方</Label>
+          <Input
+            id="candidate-organizer"
+            value={parsedEvent.organizer}
+            onChange={(event) => updateField('organizer', event.target.value)}
+          />
+        </div>
+
+        <div className="md:col-span-2">
+          <Label htmlFor="candidate-ticket-url">购票/报名链接</Label>
+          <Input
+            id="candidate-ticket-url"
+            value={parsedEvent.ticket_url}
+            onChange={(event) => updateField('ticket_url', event.target.value)}
+            placeholder="https://..."
+          />
+        </div>
+
+        <div className="md:col-span-2">
+          <Label htmlFor="candidate-cover">封面图片 URL</Label>
+          <Input
+            id="candidate-cover"
+            value={parsedEvent.cover_image ?? ''}
+            onChange={(event) => updateField('cover_image', event.target.value)}
+            placeholder="https://..."
+          />
+        </div>
+
+        <div className="md:col-span-2">
+          <Label htmlFor="candidate-tags">标签</Label>
+          <Input
+            id="candidate-tags"
+            value={parsedEvent.tags.join('，')}
+            onChange={(event) => updateField('tags', event.target.value)}
+            placeholder="用逗号分隔"
+          />
+        </div>
+      </div>
+
+      <div className="grid gap-4 rounded-xl border border-border/60 bg-card p-4 md:grid-cols-2">
+        <div>
+          <Label>来源平台</Label>
+          <Select value={parsedEvent.source_platform} onValueChange={(value) => updateField('source_platform', value)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(sourcePlatformLabels).map(([value, label]) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label htmlFor="candidate-source-title">来源标题</Label>
+          <Input
+            id="candidate-source-title"
+            value={parsedEvent.source_title}
+            onChange={(event) => updateField('source_title', event.target.value)}
+          />
+        </div>
+
+        <div className="md:col-span-2">
+          <Label htmlFor="candidate-source-url">来源链接</Label>
+          <Input
+            id="candidate-source-url"
+            value={parsedEvent.source_url}
+            onChange={(event) => updateField('source_url', event.target.value)}
+            placeholder="https://..."
+          />
+        </div>
+
+        <div className="md:col-span-2">
+          <Label htmlFor="candidate-cover-source-url">封面来源链接</Label>
+          <Input
+            id="candidate-cover-source-url"
+            value={parsedEvent.cover_source_url ?? ''}
+            onChange={(event) => updateField('cover_source_url', event.target.value)}
+            placeholder="https://..."
+          />
+        </div>
+
+        <div className="md:col-span-2">
+          <Label htmlFor="candidate-source-notes">来源备注</Label>
+          <Textarea
+            id="candidate-source-notes"
+            value={parsedEvent.source_notes}
+            rows={2}
+            onChange={(event) => updateField('source_notes', event.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-border/60 bg-card p-3">
+        <p className="mb-2 text-sm font-black text-foreground">标准化 JSON</p>
+        <Textarea
+          value={editingJson}
+          onChange={(event) => onChange(event.target.value)}
+          className="min-h-[180px] font-mono text-sm"
+          spellCheck={false}
+        />
+      </div>
+    </div>
   );
 };
 

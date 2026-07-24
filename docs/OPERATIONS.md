@@ -111,8 +111,10 @@ After that, use `/dashboard/users` to add moderators or additional admins, send 
 
 3. Paste one JSON object or an array into `/dashboard/intake`.
 4. Click `加入候选池`.
-5. Review each candidate, correct fields if needed, then click `发布活动`.
-6. Verify the activity appears in `/dashboard/events` and on the public Explore page.
+5. Review each candidate in `/dashboard/intake`. Use the structured editor for normal fixes such as title, time, address, coordinates, location accuracy, source links, cover image, tags, and price. Use the JSON editor only for advanced field repair or batch-style cleanup.
+6. Correct fields if needed, then click `保存标准化内容`.
+7. Click `发布活动` after validation and duplicate checks pass.
+8. Verify the activity appears in `/dashboard/events` and on the public Explore page.
 
 ## Activity Quality Rules
 
