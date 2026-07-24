@@ -6,7 +6,7 @@ import type { Database } from '@/integrations/supabase/types';
 import type { LocationAccuracy } from '@/types/event';
 import { getAdminBasePath } from '@/lib/adminNavigation';
 import { uploadEventCover } from '@/lib/eventCoverStorage';
-import { eventFormSchema, formatZodErrors } from '@/lib/validation';
+import { eventFormSchema, formatZodErrors, sourcePlatforms, type SourcePlatform } from '@/lib/validation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -64,7 +64,14 @@ interface Event {
   price?: number;
   ticket_url?: string;
   cover_image?: string;
+  cover_source_url?: string;
   organizer?: string;
+  source_platform?: string;
+  source_url?: string;
+  source_title?: string;
+  source_notes?: string;
+  source_checked_at?: string | null;
+  source_checked_by?: string | null;
   attendees: number;
   status: string;
   created_at: string;
@@ -93,7 +100,13 @@ const defaultEventFormData = {
   price: 0,
   ticket_url: '',
   cover_image: '',
+  cover_source_url: '',
   organizer: '',
+  source_platform: 'manual' as SourcePlatform,
+  source_url: '',
+  source_title: '',
+  source_notes: '',
+  source_checked: false,
   status: 'active' as 'active' | 'inactive' | 'draft'
 };
 
@@ -113,6 +126,7 @@ const AdminEvents = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | Event['status']>('all');
   const [categoryFilter, setCategoryFilter] = useState<'all' | string>('all');
   const [locationFilter, setLocationFilter] = useState<'all' | LocationAccuracy>('all');
+  const [sourceFilter, setSourceFilter] = useState<'all' | SourcePlatform>('all');
   const [coverUploading, setCoverUploading] = useState(false);
   const [formData, setFormData] = useState(defaultEventFormData);
 
@@ -146,6 +160,18 @@ const AdminEvents = () => {
       label: '待核验',
       description: '来自采集线索，地址和坐标尚未二次确认',
     },
+  ];
+
+  const sourcePlatformOptions: Array<{
+    value: SourcePlatform;
+    label: string;
+  }> = [
+    { value: 'manual', label: '手动录入' },
+    { value: 'xiaohongshu', label: '小红书' },
+    { value: 'wechat', label: '微信/公众号' },
+    { value: 'website', label: '官网/网页' },
+    { value: 'instagram', label: 'Instagram' },
+    { value: 'other', label: '其他来源' },
   ];
 
   const fetchEvents = useCallback(async () => {
@@ -228,7 +254,13 @@ const AdminEvents = () => {
       price: event.price || 0,
       ticket_url: event.ticket_url || '',
       cover_image: event.cover_image || '',
+      cover_source_url: event.cover_source_url || '',
       organizer: event.organizer || '',
+      source_platform: normalizeSourcePlatform(event.source_platform),
+      source_url: event.source_url || '',
+      source_title: event.source_title || '',
+      source_notes: event.source_notes || '',
+      source_checked: Boolean(event.source_checked_at),
       status: event.status as 'active' | 'inactive' | 'draft'
     });
     setIsDialogOpen(true);
@@ -277,6 +309,9 @@ const AdminEvents = () => {
     const nextLocationVerifiedAt = nextLocationAccuracy === 'precise'
       ? editingEvent?.location_verified_at || new Date().toISOString()
       : null;
+    const nextSourceCheckedAt = formData.source_checked
+      ? editingEvent?.source_checked_at || new Date().toISOString()
+      : null;
 
     try {
       type EventsInsert = Database['public']['Tables']['events']['Insert'];
@@ -290,6 +325,13 @@ const AdminEvents = () => {
         location_note: formData.location_note.trim() || null,
         location_verified_at: nextLocationVerifiedAt,
         location_verified_by: nextLocationAccuracy === 'precise' ? user?.id ?? null : null,
+        source_platform: formData.source_platform,
+        source_url: formData.source_url.trim() || null,
+        source_title: formData.source_title.trim() || null,
+        source_notes: formData.source_notes.trim() || null,
+        cover_source_url: formData.cover_source_url.trim() || null,
+        source_checked_at: nextSourceCheckedAt,
+        source_checked_by: formData.source_checked ? user?.id ?? null : null,
       } as unknown as EventsInsert;
 
       if (editingEvent) {
@@ -390,6 +432,9 @@ const AdminEvents = () => {
     }
   };
 
+  const getSourcePlatformLabel = (platform?: string) =>
+    sourcePlatformOptions.find((option) => option.value === platform)?.label ?? '手动录入';
+
   const filteredEvents = useMemo(() => {
     const normalizedSearch = searchQuery.trim().toLowerCase();
 
@@ -400,14 +445,18 @@ const AdminEvents = () => {
         event.address,
         event.district,
         event.organizer,
+        event.source_title,
+        event.source_url,
+        event.source_notes,
       ].some((value) => (value ?? '').toLowerCase().includes(normalizedSearch));
       const matchesStatus = statusFilter === 'all' || event.status === statusFilter;
       const matchesCategory = categoryFilter === 'all' || event.category === categoryFilter;
       const matchesLocation = locationFilter === 'all' || event.location_accuracy === locationFilter;
+      const matchesSource = sourceFilter === 'all' || event.source_platform === sourceFilter;
 
-      return matchesSearch && matchesStatus && matchesCategory && matchesLocation;
+      return matchesSearch && matchesStatus && matchesCategory && matchesLocation && matchesSource;
     });
-  }, [categoryFilter, events, locationFilter, searchQuery, statusFilter]);
+  }, [categoryFilter, events, locationFilter, searchQuery, sourceFilter, statusFilter]);
 
   const eventStats = useMemo(() => {
     return events.reduce(
@@ -417,9 +466,10 @@ const AdminEvents = () => {
         if (event.status === 'draft') accumulator.draft += 1;
         if (event.status === 'inactive') accumulator.inactive += 1;
         if (event.location_accuracy !== 'precise') accumulator.needsLocationReview += 1;
+        if (event.source_url && !event.source_checked_at) accumulator.needsSourceReview += 1;
         return accumulator;
       },
-      { total: 0, active: 0, draft: 0, inactive: 0, needsLocationReview: 0 },
+      { total: 0, active: 0, draft: 0, inactive: 0, needsLocationReview: 0, needsSourceReview: 0 },
     );
   }, [events]);
 
@@ -499,9 +549,9 @@ const AdminEvents = () => {
               活动列表 ({filteredEvents.length}/{events.length})
             </CardTitle>
             <CardDescription>
-              上架 {eventStats.active} · 草稿 {eventStats.draft} · 下架 {eventStats.inactive} · 待位置核验 {eventStats.needsLocationReview}
+              上架 {eventStats.active} · 草稿 {eventStats.draft} · 下架 {eventStats.inactive} · 待位置核验 {eventStats.needsLocationReview} · 待来源核验 {eventStats.needsSourceReview}
             </CardDescription>
-            <div className="grid gap-3 pt-3 md:grid-cols-[minmax(220px,1fr)_160px_180px_180px_auto]">
+            <div className="grid gap-3 pt-3 md:grid-cols-[minmax(220px,1fr)_150px_170px_170px_170px_auto]">
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -546,6 +596,19 @@ const AdminEvents = () => {
                   <SelectItem value="unverified">待核验</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={sourceFilter} onValueChange={(value: 'all' | SourcePlatform) => setSourceFilter(value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="来源" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部来源</SelectItem>
+                  {sourcePlatformOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Button
                 variant="outline"
                 onClick={() => {
@@ -553,6 +616,7 @@ const AdminEvents = () => {
                   setStatusFilter('all');
                   setCategoryFilter('all');
                   setLocationFilter('all');
+                  setSourceFilter('all');
                 }}
               >
                 重置
@@ -582,6 +646,7 @@ const AdminEvents = () => {
                     setStatusFilter('all');
                     setCategoryFilter('all');
                     setLocationFilter('all');
+                    setSourceFilter('all');
                   }}
                 >
                   清除筛选
@@ -598,6 +663,7 @@ const AdminEvents = () => {
                       <TableHead>日期时间</TableHead>
                       <TableHead>地址</TableHead>
                       <TableHead>位置</TableHead>
+                      <TableHead>来源</TableHead>
                       <TableHead>状态</TableHead>
                       <TableHead>参与人数</TableHead>
                       <TableHead className="text-right">操作</TableHead>
@@ -634,6 +700,16 @@ const AdminEvents = () => {
                           </div>
                         </TableCell>
                         <TableCell>{getLocationAccuracyBadge(event.location_accuracy)}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1">
+                            <Badge variant={event.source_url ? 'secondary' : 'outline'} className="w-fit">
+                              {getSourcePlatformLabel(event.source_platform)}
+                            </Badge>
+                            {event.source_url && !event.source_checked_at && (
+                              <span className="text-xs font-semibold text-amber-700">待核验</span>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>{getStatusBadge(event.status)}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
@@ -895,6 +971,80 @@ const AdminEvents = () => {
                   </div>
                 )}
               </div>
+
+              <div className="col-span-2 rounded-xl border border-border/70 bg-secondary/25 p-4">
+                <div className="mb-3">
+                  <h3 className="text-base font-black text-foreground">来源与核验</h3>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    记录活动线索从哪里来，方便后续复查、更新和确认宣传图来源。
+                  </p>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label>来源平台</Label>
+                    <Select
+                      value={formData.source_platform}
+                      onValueChange={(value: SourcePlatform) => setFormData(prev => ({ ...prev, source_platform: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {sourcePlatformOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="source_title">来源标题</Label>
+                    <Input
+                      id="source_title"
+                      value={formData.source_title}
+                      onChange={(e) => setFormData(prev => ({ ...prev, source_title: e.target.value }))}
+                      placeholder="例如：小红书原帖标题"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label htmlFor="source_url">来源链接</Label>
+                    <Input
+                      id="source_url"
+                      value={formData.source_url}
+                      onChange={(e) => setFormData(prev => ({ ...prev, source_url: e.target.value }))}
+                      placeholder="https://..."
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label htmlFor="cover_source_url">封面图来源链接</Label>
+                    <Input
+                      id="cover_source_url"
+                      value={formData.cover_source_url}
+                      onChange={(e) => setFormData(prev => ({ ...prev, cover_source_url: e.target.value }))}
+                      placeholder="封面图对应的小红书、官网或主办方页面"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label htmlFor="source_notes">来源核验备注</Label>
+                    <Textarea
+                      id="source_notes"
+                      value={formData.source_notes}
+                      onChange={(e) => setFormData(prev => ({ ...prev, source_notes: e.target.value }))}
+                      rows={2}
+                      placeholder="例如：已核对原帖日期，但集合点仍需活动当天确认"
+                    />
+                  </div>
+                  <div className="sm:col-span-2 flex items-center gap-2">
+                    <Switch
+                      id="source_checked"
+                      checked={formData.source_checked}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, source_checked: checked }))}
+                    />
+                    <Label htmlFor="source_checked">来源已核验</Label>
+                  </div>
+                </div>
+              </div>
               
               <div className="col-span-2 flex items-center space-x-2">
                 <Switch
@@ -947,6 +1097,10 @@ const AdminEvents = () => {
 const normalizeLocationAccuracy = (value?: string | null): LocationAccuracy => {
   if (value === 'precise' || value === 'area' || value === 'unverified') return value;
   return 'unverified';
+};
+
+const normalizeSourcePlatform = (value?: string | null): SourcePlatform => {
+  return sourcePlatforms.includes(value as SourcePlatform) ? (value as SourcePlatform) : 'manual';
 };
 
 export default AdminEvents;

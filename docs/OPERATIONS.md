@@ -46,6 +46,12 @@ Location quality specifically requires:
 
 It adds `location_accuracy`, `location_note`, and verification metadata to formal events. Without this migration, the public app still reads old activities, but the dashboard cannot save the location quality fields.
 
+Source provenance specifically requires:
+
+- `supabase/migrations/20260724002000_event_source_provenance.sql`
+
+It adds source platform, source URL, source title, cover source URL, source notes, and source verification metadata to formal events. Without this migration, candidate publishing still works only for old activity fields and the dashboard cannot save source tracking fields.
+
 ## First Admin Setup
 
 The first admin still needs one SQL insert because the role manager itself is protected by `user_roles`.
@@ -80,6 +86,7 @@ After that, use `/dashboard/users` to add moderators or additional admins, send 
   "source_platform": "manual",
   "source_url": "",
   "source_title": "",
+  "source_notes": "",
   "title": "",
   "description": "",
   "category": "music",
@@ -95,6 +102,7 @@ After that, use `/dashboard/users` to add moderators or additional admins, send 
   "price": 88,
   "ticket_url": "",
   "cover_image": "",
+  "cover_source_url": "",
   "organizer": "",
   "status": "active",
   "tags": ["北京", "周末"]
@@ -118,6 +126,13 @@ After that, use `/dashboard/users` to add moderators or additional admins, send 
   - `unverified`: social-source or scraped clue that still needs secondary verification.
 - Use `location_note` to explain weak locations, for example `只有园区信息，建议用户查看来源或搜索主办方最新集合点`.
 - Social-source candidates should stay `unverified` until an operator checks the original post, official page, venue listing, or map search result.
+- Preserve source metadata whenever an event is collected from social platforms or websites:
+  - `source_platform`: `xiaohongshu`, `wechat`, `website`, `instagram`, `manual`, or `other`.
+  - `source_url`: original post, official page, ticket page, or venue page.
+  - `source_title`: original source title or post headline.
+  - `source_notes`: what was checked, what remains uncertain, and any important editorial caveat.
+  - `cover_source_url`: where the selected cover image came from.
+- Mark `来源已核验` in `/dashboard/events` only after checking the original post or official source. Publishing from `/dashboard/intake` records the candidate source and marks it checked when a source URL exists.
 - Use `draft` when the source is incomplete, `active` when ready to publish, and `inactive` to take an event down.
 - Prefer official ticket or venue links for `ticket_url`.
 - Upload a cover image in `/dashboard/events/new`, or paste a real event/venue image URL into `cover_image`; if empty, the app falls back to category artwork.

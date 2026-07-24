@@ -18,7 +18,7 @@ import { getAdminBasePath } from '@/lib/adminNavigation';
 import { findEventDuplicateMatches } from '@/lib/eventDuplicates';
 import type { EventDuplicateMatch } from '@/lib/eventDuplicates';
 import { uploadEventCover } from '@/lib/eventCoverStorage';
-import { eventCategories, eventFormSchema, formatZodErrors } from '@/lib/validation';
+import { eventCategories, eventFormSchema, formatZodErrors, sourcePlatforms, type SourcePlatform } from '@/lib/validation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,9 +29,12 @@ import { useToast } from '@/hooks/use-toast';
 type Candidate = Tables<'event_import_candidates'>;
 type PublishedEvent = Pick<Tables<'events'>, 'id' | 'title' | 'date' | 'time' | 'address' | 'district' | 'status'>;
 type CandidateStatus = 'all' | 'pending' | 'imported' | 'rejected';
-type SourcePlatform = 'xiaohongshu' | 'manual' | 'wechat' | 'instagram' | 'website' | 'other';
 
 type NormalizedEvent = {
+  source_platform: SourcePlatform;
+  source_url: string;
+  source_title: string;
+  source_notes: string;
   title: string;
   description: string;
   category: string;
@@ -49,12 +52,11 @@ type NormalizedEvent = {
   organizer: string;
   status: 'active' | 'inactive' | 'draft';
   cover_image?: string;
+  cover_source_url?: string;
   tags: string[];
 };
 
 type DuplicateMatch = EventDuplicateMatch<PublishedEvent>;
-
-const sourcePlatforms: SourcePlatform[] = ['xiaohongshu', 'manual', 'wechat', 'instagram', 'website', 'other'];
 
 const statusLabels: Record<CandidateStatus, string> = {
   all: '全部',
@@ -361,7 +363,7 @@ const AdminIntake = () => {
     return new Map(
       candidates.map((candidate) => [
         candidate.id,
-        findEventDuplicateMatches(normalizeEventPayload(asRecord(candidate.normalized_event)), publishedEvents),
+        findEventDuplicateMatches(normalizeCandidateEventPayload(candidate), publishedEvents),
       ]),
     );
   }, [candidates, publishedEvents]);
@@ -378,9 +380,9 @@ const AdminIntake = () => {
           const validation = validateNormalizedEvent(normalizedEvent);
 
           return {
-            source_platform: normalizeSourcePlatform(row.source_platform),
-            source_url: getString(row.source_url) || null,
-            source_title: getString(row.source_title) || getString(row.title) || null,
+            source_platform: normalizedEvent.source_platform,
+            source_url: normalizedEvent.source_url || null,
+            source_title: normalizedEvent.source_title || getString(row.title) || null,
             raw_payload: toJson(row),
             normalized_event: toJson(normalizedEvent),
             status: 'pending',
@@ -417,7 +419,7 @@ const AdminIntake = () => {
 
   const handleEditCandidate = (candidate: Candidate) => {
     setEditingId(candidate.id);
-    setEditingJson(JSON.stringify(candidate.normalized_event, null, 2));
+    setEditingJson(JSON.stringify(normalizeCandidateEventPayload(candidate), null, 2));
   };
 
   const handleSaveCandidate = async (candidate: Candidate) => {
@@ -430,6 +432,9 @@ const AdminIntake = () => {
         .from('event_import_candidates')
         .update({
           normalized_event: toJson(normalized),
+          source_platform: normalized.source_platform,
+          source_url: normalized.source_url || null,
+          source_title: normalized.source_title || null,
           quality_score: validation.valid ? 1 : 0.35,
           notes: validation.valid ? null : validation.errors.join('\n'),
         })
@@ -459,13 +464,16 @@ const AdminIntake = () => {
     setCoverUploadingId(candidate.id);
     try {
       const publicUrl = await uploadEventCover(file, user?.id);
-      let payloadSource = asRecord(candidate.normalized_event);
+      let payloadSource = getCandidatePayload(candidate);
 
       if (editingId === candidate.id && editingJson.trim()) {
         try {
-          payloadSource = asRecord(JSON.parse(editingJson) as unknown);
+          payloadSource = {
+            ...getCandidatePayload(candidate),
+            ...asRecord(JSON.parse(editingJson) as unknown),
+          };
         } catch {
-          payloadSource = asRecord(candidate.normalized_event);
+          payloadSource = getCandidatePayload(candidate);
         }
       }
 
@@ -531,7 +539,7 @@ const AdminIntake = () => {
   };
 
   const handlePublishCandidate = async (candidate: Candidate) => {
-    const normalized = normalizeEventPayload(asRecord(candidate.normalized_event));
+    const normalized = normalizeCandidateEventPayload(candidate);
     const validation = validateNormalizedEvent(normalized);
     const duplicateMatches = findEventDuplicateMatches(normalized, publishedEvents);
 
@@ -756,7 +764,7 @@ const CandidateCard = ({
   onRestore,
   onUploadCover,
 }: CandidateCardProps) => {
-  const normalized = normalizeEventPayload(asRecord(candidate.normalized_event));
+  const normalized = normalizeCandidateEventPayload(candidate);
   const validation = validateNormalizedEvent(normalized);
   const isEditing = editingId === candidate.id;
   const importedUrl = candidate.imported_event_id ? `/event/${candidate.imported_event_id}` : null;
@@ -848,7 +856,17 @@ const CandidateCard = ({
           <InfoTile label="位置" value={locationAccuracyLabels[normalized.location_accuracy]} />
           <InfoTile label="票价" value={normalized.is_free ? '免费' : `¥${normalized.price}`} />
           <InfoTile label="主办方" value={normalized.organizer || '-'} />
+          <InfoTile label="来源" value={sourcePlatformLabels[normalized.source_platform]} />
         </div>
+
+        {(normalized.source_title || normalized.source_url || normalized.source_notes) && (
+          <div className="rounded-xl border border-border/60 bg-card px-4 py-3 text-sm font-semibold text-muted-foreground">
+            <p className="font-black text-foreground">来源信息</p>
+            {normalized.source_title && <p className="mt-1">标题：{normalized.source_title}</p>}
+            {normalized.source_notes && <p className="mt-1">备注：{normalized.source_notes}</p>}
+            {normalized.cover_source_url && <p className="mt-1">封面来源：{normalized.cover_source_url}</p>}
+          </div>
+        )}
 
         {normalized.location_accuracy !== 'precise' && (
           <div className="rounded-xl border border-amber-300/70 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-950">
@@ -977,6 +995,11 @@ const validateNormalizedEvent = (event: NormalizedEvent) => {
     status: event.status,
     location_accuracy: event.location_accuracy,
     location_note: event.location_note,
+    source_platform: event.source_platform,
+    source_url: event.source_url,
+    source_title: event.source_title,
+    source_notes: event.source_notes,
+    cover_source_url: event.cover_source_url,
   });
 
   if (result.success) return { valid: true, errors: [] };
@@ -998,11 +1021,18 @@ const buildEventInsert = (event: NormalizedEvent, userId?: string): TablesInsert
   ticket_url: event.ticket_url || null,
   organizer: event.organizer || null,
   cover_image: event.cover_image || null,
+  cover_source_url: event.cover_source_url || null,
   status: event.status,
   location_accuracy: event.location_accuracy,
   location_note: event.location_note || null,
   location_verified_at: event.location_accuracy === 'precise' ? new Date().toISOString() : null,
   location_verified_by: event.location_accuracy === 'precise' ? userId ?? null : null,
+  source_platform: event.source_platform,
+  source_url: event.source_url || null,
+  source_title: event.source_title || null,
+  source_notes: event.source_notes || null,
+  source_checked_at: event.source_url ? new Date().toISOString() : null,
+  source_checked_by: event.source_url ? userId ?? null : null,
   attendees: 0,
   created_by: userId ?? null,
 });
@@ -1040,6 +1070,10 @@ const normalizeEventPayload = (payload: Record<string, unknown>): NormalizedEven
   const isFree = getBoolean(payload.is_free, getString(payload.price).includes('免费') || getString(payload.price) === '');
 
   return {
+    source_platform: normalizeSourcePlatform(payload.source_platform),
+    source_url: getString(payload.source_url),
+    source_title: getString(payload.source_title),
+    source_notes: getString(payload.source_notes),
     title: getString(payload.title),
     description: getString(payload.description),
     category,
@@ -1057,14 +1091,34 @@ const normalizeEventPayload = (payload: Record<string, unknown>): NormalizedEven
     organizer: getString(payload.organizer),
     status: normalizeStatus(getString(payload.status)),
     cover_image: getString(payload.cover_image) || undefined,
+    cover_source_url: getString(payload.cover_source_url) || undefined,
     tags: normalizeTags(payload.tags),
   };
 };
+
+const getCandidatePayload = (candidate: Candidate): Record<string, unknown> => ({
+  ...asRecord(candidate.normalized_event),
+  source_platform: candidate.source_platform,
+  source_url: candidate.source_url ?? getString(asRecord(candidate.normalized_event).source_url),
+  source_title: candidate.source_title ?? getString(asRecord(candidate.normalized_event).source_title),
+});
+
+const normalizeCandidateEventPayload = (candidate: Candidate): NormalizedEvent =>
+  normalizeEventPayload(getCandidatePayload(candidate));
 
 const locationAccuracyLabels: Record<LocationAccuracy, string> = {
   precise: '精确位置',
   area: '区域估算',
   unverified: '待核验',
+};
+
+const sourcePlatformLabels: Record<SourcePlatform, string> = {
+  manual: '手动录入',
+  xiaohongshu: '小红书',
+  wechat: '微信/公众号',
+  website: '官网/网页',
+  instagram: 'Instagram',
+  other: '其他来源',
 };
 
 const normalizeLocationAccuracy = (value: string): LocationAccuracy => {

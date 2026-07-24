@@ -5,6 +5,9 @@ export const eventCategories = ['coffee', 'music', 'market', 'party', 'exhibitio
 
 export const eventStatus = ['active', 'inactive', 'draft'] as const;
 export const locationAccuracies = ['precise', 'area', 'unverified'] as const;
+export const sourcePlatforms = ['xiaohongshu', 'manual', 'wechat', 'instagram', 'website', 'other'] as const;
+
+export type SourcePlatform = (typeof sourcePlatforms)[number];
 
 // URL validation helper that allows empty strings or valid URLs
 const optionalUrl = z.string()
@@ -84,6 +87,23 @@ export const eventSchema = z.object({
   location_note: z.string()
     .max(500, '位置备注不能超过 500 字符')
     .optional()
+    .or(z.literal('')),
+
+  source_platform: z.enum(sourcePlatforms).default('manual'),
+
+  source_url: optionalUrl.optional().or(z.literal('')),
+
+  source_title: z.string()
+    .max(300, '来源标题不能超过 300 字符')
+    .optional()
+    .or(z.literal('')),
+
+  source_notes: z.string()
+    .max(1000, '来源备注不能超过 1000 字符')
+    .optional()
+    .or(z.literal('')),
+
+  cover_source_url: optionalUrl.optional()
     .or(z.literal(''))
 });
 

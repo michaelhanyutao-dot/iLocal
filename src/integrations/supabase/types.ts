@@ -210,6 +210,13 @@ export type Database = {
           location_verified_by: string | null
           organizer: string | null
           price: number | null
+          cover_source_url: string | null
+          source_checked_at: string | null
+          source_checked_by: string | null
+          source_notes: string | null
+          source_platform: string
+          source_title: string | null
+          source_url: string | null
           status: string
           ticket_url: string | null
           time: string
@@ -236,6 +243,13 @@ export type Database = {
           location_verified_by?: string | null
           organizer?: string | null
           price?: number | null
+          cover_source_url?: string | null
+          source_checked_at?: string | null
+          source_checked_by?: string | null
+          source_notes?: string | null
+          source_platform?: string
+          source_title?: string | null
+          source_url?: string | null
           status?: string
           ticket_url?: string | null
           time: string
@@ -262,6 +276,13 @@ export type Database = {
           location_verified_by?: string | null
           organizer?: string | null
           price?: number | null
+          cover_source_url?: string | null
+          source_checked_at?: string | null
+          source_checked_by?: string | null
+          source_notes?: string | null
+          source_platform?: string
+          source_title?: string | null
+          source_url?: string | null
           status?: string
           ticket_url?: string | null
           time?: string
