@@ -3,6 +3,9 @@ export interface EventLocation {
   lat: number;
   lng: number;
   district: string;
+  accuracy: LocationAccuracy;
+  note?: string;
+  verifiedAt?: string;
 }
 
 export interface EventTicket {
@@ -12,6 +15,7 @@ export interface EventTicket {
 }
 
 export type EventCategory = 'coffee' | 'music' | 'market' | 'party' | 'exhibition' | 'bar' | 'sports';
+export type LocationAccuracy = 'precise' | 'area' | 'unverified';
 
 export interface Event {
   id: string;

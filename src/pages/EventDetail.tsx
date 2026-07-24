@@ -3,6 +3,7 @@ import type { ComponentType, ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
+  AlertTriangle,
   Bookmark,
   CalendarPlus,
   Clock,
@@ -31,6 +32,17 @@ const categoryLabels: Record<string, string> = {
   exhibition: '展览',
   bar: '酒吧',
   sports: '运动',
+};
+
+const locationAccuracyCopy = {
+  area: {
+    title: '位置为区域估算',
+    body: '该活动目前只有园区、商圈或集合区域线索，出发前建议查看消息来源，或搜索主办方确认最新集合点。',
+  },
+  unverified: {
+    title: '位置尚未核验',
+    body: '该位置来自采集线索，地址或坐标还没有完成二次确认。建议先查看来源信息，或继续搜索活动、店面和主办方说明。',
+  },
 };
 
 const EventDetail = () => {
@@ -165,6 +177,13 @@ const EventDetail = () => {
             <InfoTile icon={Ticket} label="人均" value={event.ticket.isFree ? '免费' : `¥${event.ticket.price}`} />
           </div>
 
+          {event.location.accuracy !== 'precise' && (
+            <LocationAccuracyNotice
+              title={locationAccuracyCopy[event.location.accuracy]?.title ?? '位置待确认'}
+              body={event.location.note || locationAccuracyCopy[event.location.accuracy]?.body}
+            />
+          )}
+
           <Card className="rounded-2xl border-border/80 bg-card p-4 shadow-none sm:p-5">
             <h2 className="text-lg font-black text-foreground">{event.title}</h2>
             <div className="mt-3 space-y-2 text-base font-semibold text-muted-foreground">
@@ -267,6 +286,20 @@ const InfoTile = ({ icon: Icon, label, value }: InfoTileProps) => (
       {label}
     </div>
     <div className="line-clamp-2 break-words text-lg font-black leading-tight text-foreground">{value}</div>
+  </div>
+);
+
+const LocationAccuracyNotice = ({ title, body }: { title: string; body?: string }) => (
+  <div className="rounded-2xl border border-primary/20 bg-secondary/35 px-4 py-3 text-muted-foreground">
+    <div className="flex gap-3">
+      <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-card text-primary">
+        <AlertTriangle className="h-4 w-4" />
+      </span>
+      <div>
+        <p className="text-sm font-black text-foreground">{title}</p>
+        {body && <p className="mt-1 text-sm font-semibold leading-relaxed">{body}</p>}
+      </div>
+    </div>
   </div>
 );
 

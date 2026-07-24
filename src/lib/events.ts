@@ -6,7 +6,7 @@ import partyImage from '@/assets/party-event.jpg';
 import { mockEvents } from '@/data/mockEvents';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
-import type { Event, EventCategory } from '@/types/event';
+import type { Event, EventCategory, LocationAccuracy } from '@/types/event';
 
 export type EventRow = Tables<'events'>;
 export type EventInsert = TablesInsert<'events'>;
@@ -29,9 +29,13 @@ const categoryImages: Record<EventCategory, string> = {
 };
 
 const eventCategories: EventCategory[] = ['coffee', 'music', 'market', 'party', 'exhibition', 'bar', 'sports'];
+const locationAccuracies: LocationAccuracy[] = ['precise', 'area', 'unverified'];
 
 export const isEventCategory = (category: string): category is EventCategory =>
   eventCategories.includes(category as EventCategory);
+
+export const isLocationAccuracy = (value: unknown): value is LocationAccuracy =>
+  typeof value === 'string' && locationAccuracies.includes(value as LocationAccuracy);
 
 export const formatDateLabel = (date: string) => {
   const parsed = new Date(`${date}T00:00:00`);
@@ -45,6 +49,7 @@ export const formatDateLabel = (date: string) => {
 
 export const mapEventRowToEvent = (row: EventWithTags): Event => {
   const category = isEventCategory(row.category) ? row.category : 'market';
+  const locationAccuracy = isLocationAccuracy(row.location_accuracy) ? row.location_accuracy : 'unverified';
   const tags = row.event_tags
     ?.map((eventTag) => eventTag.tags?.name)
     .filter((tag): tag is string => Boolean(tag)) ?? [];
@@ -62,6 +67,9 @@ export const mapEventRowToEvent = (row: EventWithTags): Event => {
       lat: Number(row.latitude),
       lng: Number(row.longitude),
       district: row.district ?? '',
+      accuracy: locationAccuracy,
+      note: row.location_note ?? undefined,
+      verifiedAt: row.location_verified_at ?? undefined,
     },
     ticket: {
       isFree: row.is_free,

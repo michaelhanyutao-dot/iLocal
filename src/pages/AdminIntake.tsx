@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Json, Tables, TablesInsert } from '@/integrations/supabase/types';
+import type { LocationAccuracy } from '@/types/event';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAdminBasePath } from '@/lib/adminNavigation';
 import { findEventDuplicateMatches } from '@/lib/eventDuplicates';
@@ -39,6 +40,8 @@ type NormalizedEvent = {
   address: string;
   latitude: number;
   longitude: number;
+  location_accuracy: LocationAccuracy;
+  location_note: string;
   district: string;
   is_free: boolean;
   price: number;
@@ -73,6 +76,8 @@ const beijingSampleEvents = [
     address: '北京市东城区五道营胡同',
     latitude: 39.9498,
     longitude: 116.4142,
+    location_accuracy: 'precise',
+    location_note: '',
     district: '东城区',
     is_free: false,
     price: 68,
@@ -92,6 +97,8 @@ const beijingSampleEvents = [
     address: '北京市朝阳区工体北路8号三里屯SOHO',
     latitude: 39.9365,
     longitude: 116.4542,
+    location_accuracy: 'precise',
+    location_note: '',
     district: '朝阳区',
     is_free: false,
     price: 120,
@@ -111,6 +118,8 @@ const beijingSampleEvents = [
     address: '北京市朝阳区亮马河国际风情水岸',
     latitude: 39.9504,
     longitude: 116.4686,
+    location_accuracy: 'area',
+    location_note: '水岸和市集活动可能有多个入口，发布前建议确认具体摊位区域。',
     district: '朝阳区',
     is_free: true,
     price: 0,
@@ -130,6 +139,8 @@ const beijingSampleEvents = [
     address: '北京市朝阳区酒仙桥路4号798艺术区',
     latitude: 39.9841,
     longitude: 116.4956,
+    location_accuracy: 'precise',
+    location_note: '',
     district: '朝阳区',
     is_free: false,
     price: 88,
@@ -149,6 +160,8 @@ const beijingSampleEvents = [
     address: '北京市朝阳区朝阳公园南路1号',
     latitude: 39.9337,
     longitude: 116.4781,
+    location_accuracy: 'area',
+    location_note: '公园活动建议确认集合点。',
     district: '朝阳区',
     is_free: false,
     price: 39,
@@ -168,6 +181,8 @@ const beijingSampleEvents = [
     address: '北京市东城区前门大街',
     latitude: 39.8993,
     longitude: 116.3972,
+    location_accuracy: 'area',
+    location_note: '街区活动建议确认具体摊位或集合点。',
     district: '东城区',
     is_free: true,
     price: 0,
@@ -187,6 +202,8 @@ const beijingSampleEvents = [
     address: '北京市东城区国子监街',
     latitude: 39.9489,
     longitude: 116.4116,
+    location_accuracy: 'area',
+    location_note: '只有街道信息，发布前建议核对具体书店或门牌。',
     district: '东城区',
     is_free: false,
     price: 49,
@@ -206,6 +223,8 @@ const beijingSampleEvents = [
     address: '北京市海淀区复兴路69号华熙LIVE',
     latitude: 39.9126,
     longitude: 116.2805,
+    location_accuracy: 'precise',
+    location_note: '',
     district: '海淀区',
     is_free: false,
     price: 99,
@@ -225,6 +244,8 @@ const beijingSampleEvents = [
     address: '北京市西城区旧鼓楼大街',
     latitude: 39.9442,
     longitude: 116.3896,
+    location_accuracy: 'area',
+    location_note: '只有街道线索，发布前建议确认具体酒吧。',
     district: '西城区',
     is_free: false,
     price: 78,
@@ -244,6 +265,8 @@ const beijingSampleEvents = [
     address: '北京市石景山区石景山路68号首钢园',
     latitude: 39.9121,
     longitude: 116.1695,
+    location_accuracy: 'precise',
+    location_note: '',
     district: '石景山区',
     is_free: true,
     price: 0,
@@ -624,8 +647,8 @@ const AdminIntake = () => {
               spellCheck={false}
             />
             <div className="rounded-lg border border-border/60 bg-card px-4 py-3 text-sm text-muted-foreground">
-              建议字段：title, description, category, date, time, address, latitude, longitude, district, is_free,
-              price, organizer, tags。
+              建议字段：title, description, category, date, time, address, latitude, longitude, district,
+              location_accuracy, location_note, is_free, price, organizer, tags。
             </div>
             <Button onClick={handleCreateCandidates} disabled={saving} className="w-full">
               <Upload className="mr-2 h-4 w-4" />
@@ -822,9 +845,19 @@ const CandidateCard = ({
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <InfoTile label="分类" value={normalized.category || '-'} />
           <InfoTile label="区域" value={normalized.district || '-'} />
+          <InfoTile label="位置" value={locationAccuracyLabels[normalized.location_accuracy]} />
           <InfoTile label="票价" value={normalized.is_free ? '免费' : `¥${normalized.price}`} />
           <InfoTile label="主办方" value={normalized.organizer || '-'} />
         </div>
+
+        {normalized.location_accuracy !== 'precise' && (
+          <div className="rounded-xl border border-amber-300/70 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-950">
+            <p className="font-black">{locationAccuracyLabels[normalized.location_accuracy]}</p>
+            <p className="mt-1">
+              {normalized.location_note || '这条线索的位置还需要查看来源或进一步搜索主办方、店面、集合点后再确认。'}
+            </p>
+          </div>
+        )}
 
         {normalized.description && (
           <p className="rounded-xl border border-border/60 bg-card px-4 py-3 text-sm font-semibold text-muted-foreground">
@@ -942,6 +975,8 @@ const validateNormalizedEvent = (event: NormalizedEvent) => {
     ticket_url: event.ticket_url,
     organizer: event.organizer,
     status: event.status,
+    location_accuracy: event.location_accuracy,
+    location_note: event.location_note,
   });
 
   if (result.success) return { valid: true, errors: [] };
@@ -964,6 +999,10 @@ const buildEventInsert = (event: NormalizedEvent, userId?: string): TablesInsert
   organizer: event.organizer || null,
   cover_image: event.cover_image || null,
   status: event.status,
+  location_accuracy: event.location_accuracy,
+  location_note: event.location_note || null,
+  location_verified_at: event.location_accuracy === 'precise' ? new Date().toISOString() : null,
+  location_verified_by: event.location_accuracy === 'precise' ? userId ?? null : null,
   attendees: 0,
   created_by: userId ?? null,
 });
@@ -1009,6 +1048,8 @@ const normalizeEventPayload = (payload: Record<string, unknown>): NormalizedEven
     address: getString(payload.address),
     latitude: getNumber(payload.latitude),
     longitude: getNumber(payload.longitude),
+    location_accuracy: normalizeLocationAccuracy(getString(payload.location_accuracy)),
+    location_note: getString(payload.location_note),
     district: getString(payload.district),
     is_free: isFree,
     price: isFree ? 0 : getNumber(payload.price),
@@ -1018,6 +1059,35 @@ const normalizeEventPayload = (payload: Record<string, unknown>): NormalizedEven
     cover_image: getString(payload.cover_image) || undefined,
     tags: normalizeTags(payload.tags),
   };
+};
+
+const locationAccuracyLabels: Record<LocationAccuracy, string> = {
+  precise: '精确位置',
+  area: '区域估算',
+  unverified: '待核验',
+};
+
+const normalizeLocationAccuracy = (value: string): LocationAccuracy => {
+  const lowerValue = value.trim().toLowerCase();
+  const aliases: Record<string, LocationAccuracy> = {
+    precise: 'precise',
+    exact: 'precise',
+    confirmed: 'precise',
+    精确: 'precise',
+    已核验: 'precise',
+    area: 'area',
+    approximate: 'area',
+    approx: 'area',
+    区域: 'area',
+    估算: 'area',
+    区域估算: 'area',
+    unverified: 'unverified',
+    pending: 'unverified',
+    待核验: 'unverified',
+    未核验: 'unverified',
+  };
+
+  return aliases[lowerValue] ?? 'unverified';
 };
 
 const normalizeCategory = (value: string) => {

@@ -40,6 +40,12 @@ User management specifically requires:
 
 It creates `app_user_profiles`, syncs Auth users into an operations-facing user ledger, and stores app-level account status (`active` or `suspended`). Without this migration, `/dashboard/users` cannot show the account list.
 
+Location quality specifically requires:
+
+- `supabase/migrations/20260724001000_event_location_quality.sql`
+
+It adds `location_accuracy`, `location_note`, and verification metadata to formal events. Without this migration, the public app still reads old activities, but the dashboard cannot save the location quality fields.
+
 ## First Admin Setup
 
 The first admin still needs one SQL insert because the role manager itself is protected by `user_roles`.
@@ -82,6 +88,8 @@ After that, use `/dashboard/users` to add moderators or additional admins, send 
   "address": "",
   "latitude": 39.9,
   "longitude": 116.4,
+  "location_accuracy": "unverified",
+  "location_note": "只有社交平台线索，发布前建议确认具体店面或集合点。",
   "district": "朝阳区",
   "is_free": false,
   "price": 88,
@@ -104,6 +112,12 @@ After that, use `/dashboard/users` to add moderators or additional admins, send 
 - Date must be `YYYY-MM-DD`; time must be `HH:mm`.
 - Latitude and longitude should point to the actual venue, not just the district.
 - Use Tencent/GCJ-02 coordinates for event locations. Browser user location is converted before rendering, but event data should not mix WGS84, Baidu BD-09, or rough district-center coordinates.
+- Set `location_accuracy` on every activity:
+  - `precise`: exact venue, store, building, or doorplate has been checked.
+  - `area`: only a park, compound, shopping area, street, or broad gathering area is known.
+  - `unverified`: social-source or scraped clue that still needs secondary verification.
+- Use `location_note` to explain weak locations, for example `只有园区信息，建议用户查看来源或搜索主办方最新集合点`.
+- Social-source candidates should stay `unverified` until an operator checks the original post, official page, venue listing, or map search result.
 - Use `draft` when the source is incomplete, `active` when ready to publish, and `inactive` to take an event down.
 - Prefer official ticket or venue links for `ticket_url`.
 - Upload a cover image in `/dashboard/events/new`, or paste a real event/venue image URL into `cover_image`; if empty, the app falls back to category artwork.
@@ -124,6 +138,7 @@ Before promoting a batch:
 - Explore map and list both show the new events.
 - Search finds event title, address, organizer, or tag.
 - Event detail page shows the correct title, image, time, price, address, and Tencent map entry.
+- Event detail page shows a location reminder for `area` or `unverified` activities, and no reminder for `precise` activities.
 - Save, like, share, navigation, and plan buttons respond.
 - Saved calendar shows planned events under the correct date.
 - `/me` shows guest/user state without an operations dashboard entry.

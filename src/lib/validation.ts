@@ -4,6 +4,7 @@ import { z } from 'zod';
 export const eventCategories = ['coffee', 'music', 'market', 'party', 'exhibition', 'bar', 'sports'] as const;
 
 export const eventStatus = ['active', 'inactive', 'draft'] as const;
+export const locationAccuracies = ['precise', 'area', 'unverified'] as const;
 
 // URL validation helper that allows empty strings or valid URLs
 const optionalUrl = z.string()
@@ -75,6 +76,13 @@ export const eventSchema = z.object({
   
   organizer: z.string()
     .max(200, '主办方名称不能超过 200 字符')
+    .optional()
+    .or(z.literal('')),
+
+  location_accuracy: z.enum(locationAccuracies).default('unverified'),
+
+  location_note: z.string()
+    .max(500, '位置备注不能超过 500 字符')
     .optional()
     .or(z.literal(''))
 });

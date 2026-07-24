@@ -204,6 +204,10 @@ export type Database = {
           is_free: boolean
           latitude: number
           longitude: number
+          location_accuracy: string
+          location_note: string | null
+          location_verified_at: string | null
+          location_verified_by: string | null
           organizer: string | null
           price: number | null
           status: string
@@ -226,6 +230,10 @@ export type Database = {
           is_free?: boolean
           latitude: number
           longitude: number
+          location_accuracy?: string
+          location_note?: string | null
+          location_verified_at?: string | null
+          location_verified_by?: string | null
           organizer?: string | null
           price?: number | null
           status?: string
@@ -248,6 +256,10 @@ export type Database = {
           is_free?: boolean
           latitude?: number
           longitude?: number
+          location_accuracy?: string
+          location_note?: string | null
+          location_verified_at?: string | null
+          location_verified_by?: string | null
           organizer?: string | null
           price?: number | null
           status?: string

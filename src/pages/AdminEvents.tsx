@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Database } from '@/integrations/supabase/types';
+import type { LocationAccuracy } from '@/types/event';
 import { getAdminBasePath } from '@/lib/adminNavigation';
 import { uploadEventCover } from '@/lib/eventCoverStorage';
 import { eventFormSchema, formatZodErrors } from '@/lib/validation';
@@ -54,6 +55,10 @@ interface Event {
   address: string;
   latitude: number;
   longitude: number;
+  location_accuracy?: string;
+  location_note?: string;
+  location_verified_at?: string | null;
+  location_verified_by?: string | null;
   district?: string;
   is_free: boolean;
   price?: number;
@@ -81,6 +86,8 @@ const defaultEventFormData = {
   address: '',
   latitude: 0,
   longitude: 0,
+  location_accuracy: 'unverified' as LocationAccuracy,
+  location_note: '',
   district: '',
   is_free: true,
   price: 0,
@@ -118,6 +125,28 @@ const AdminEvents = () => {
     { value: 'sports', label: '运动活动', icon: '🏃' },
   ];
 
+  const locationAccuracyOptions: Array<{
+    value: LocationAccuracy;
+    label: string;
+    description: string;
+  }> = [
+    {
+      value: 'precise',
+      label: '精确位置',
+      description: '已确认到店名、场馆或门牌，可直接导航',
+    },
+    {
+      value: 'area',
+      label: '区域估算',
+      description: '只有园区、商圈、公园或集合区域，需要用户出发前核对',
+    },
+    {
+      value: 'unverified',
+      label: '待核验',
+      description: '来自采集线索，地址和坐标尚未二次确认',
+    },
+  ];
+
   const fetchEvents = useCallback(async () => {
     try {
       const { data, error } = await supabase
@@ -126,7 +155,10 @@ const AdminEvents = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setEvents(data || []);
+      setEvents((data || []).map((event) => ({
+        ...event,
+        location_accuracy: normalizeLocationAccuracy(event.location_accuracy),
+      })));
     } catch (error) {
       console.error('Error fetching events:', error);
       toast({
@@ -188,6 +220,8 @@ const AdminEvents = () => {
       address: event.address,
       latitude: event.latitude,
       longitude: event.longitude,
+      location_accuracy: normalizeLocationAccuracy(event.location_accuracy),
+      location_note: event.location_note || '',
       district: event.district || '',
       is_free: event.is_free,
       price: event.price || 0,
@@ -238,6 +272,10 @@ const AdminEvents = () => {
     }
 
     const validatedData = validationResult.data;
+    const nextLocationAccuracy = formData.location_accuracy;
+    const nextLocationVerifiedAt = nextLocationAccuracy === 'precise'
+      ? editingEvent?.location_verified_at || new Date().toISOString()
+      : null;
 
     try {
       type EventsInsert = Database['public']['Tables']['events']['Insert'];
@@ -246,7 +284,11 @@ const AdminEvents = () => {
       const eventData = {
         ...validatedData,
         created_by: user?.id,
-        attendees: editingEvent?.attendees || 0
+        attendees: editingEvent?.attendees || 0,
+        location_accuracy: nextLocationAccuracy,
+        location_note: formData.location_note.trim() || null,
+        location_verified_at: nextLocationVerifiedAt,
+        location_verified_by: nextLocationAccuracy === 'precise' ? user?.id ?? null : null,
       } as unknown as EventsInsert;
 
       if (editingEvent) {
@@ -334,6 +376,17 @@ const AdminEvents = () => {
   const getCategoryLabel = (category: string) => {
     const option = categoryOptions.find(opt => opt.value === category);
     return option ? `${option.icon} ${option.label}` : category;
+  };
+
+  const getLocationAccuracyBadge = (accuracy?: string) => {
+    switch (accuracy) {
+      case 'precise':
+        return <Badge className="bg-primary/15 text-primary hover:bg-primary/15">精确</Badge>;
+      case 'area':
+        return <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">区域估算</Badge>;
+      default:
+        return <Badge variant="outline" className="bg-muted text-muted-foreground">待核验</Badge>;
+    }
   };
 
   const filteredEvents = useMemo(() => {
@@ -528,6 +581,7 @@ const AdminEvents = () => {
                       <TableHead>类别</TableHead>
                       <TableHead>日期时间</TableHead>
                       <TableHead>地址</TableHead>
+                      <TableHead>位置</TableHead>
                       <TableHead>状态</TableHead>
                       <TableHead>参与人数</TableHead>
                       <TableHead className="text-right">操作</TableHead>
@@ -558,11 +612,12 @@ const AdminEvents = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3" />
-                            {event.district || event.address.substring(0, 20)}...
+                          <div className="flex max-w-[220px] items-center gap-1">
+                            <MapPin className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{event.district || event.address}</span>
                           </div>
                         </TableCell>
+                        <TableCell>{getLocationAccuracyBadge(event.location_accuracy)}</TableCell>
                         <TableCell>{getStatusBadge(event.status)}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
@@ -742,6 +797,28 @@ const AdminEvents = () => {
                   onChange={(e) => setFormData(prev => ({ ...prev, longitude: parseFloat(e.target.value) || 0 }))}
                 />
               </div>
+
+              <div>
+                <Label>位置可信度</Label>
+                <Select
+                  value={formData.location_accuracy}
+                  onValueChange={(value: LocationAccuracy) => setFormData(prev => ({ ...prev, location_accuracy: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {locationAccuracyOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="mt-1 text-xs font-medium text-muted-foreground">
+                  {locationAccuracyOptions.find((option) => option.value === formData.location_accuracy)?.description}
+                </p>
+              </div>
               
               <div>
                 <Label htmlFor="district">区域</Label>
@@ -749,6 +826,17 @@ const AdminEvents = () => {
                   id="district"
                   value={formData.district}
                   onChange={(e) => setFormData(prev => ({ ...prev, district: e.target.value }))}
+                />
+              </div>
+
+              <div className="col-span-2">
+                <Label htmlFor="location_note">位置备注</Label>
+                <Textarea
+                  id="location_note"
+                  value={formData.location_note}
+                  onChange={(e) => setFormData(prev => ({ ...prev, location_note: e.target.value }))}
+                  rows={2}
+                  placeholder="例如：只有园区信息，建议用户查看来源或搜索主办方最新集合点"
                 />
               </div>
               
@@ -838,6 +926,11 @@ const AdminEvents = () => {
       </Dialog>
     </div>
   );
+};
+
+const normalizeLocationAccuracy = (value?: string | null): LocationAccuracy => {
+  if (value === 'precise' || value === 'area' || value === 'unverified') return value;
+  return 'unverified';
 };
 
 export default AdminEvents;

@@ -18,7 +18,8 @@ export const mockEvents: Event[] = [
       address: '北京市朝阳区工体北路8号三里屯SOHO',
       lat: 39.9353,
       lng: 116.4604,
-      district: '朝阳区'
+      district: '朝阳区',
+      accuracy: 'precise'
     },
     ticket: {
       isFree: false,
@@ -42,7 +43,8 @@ export const mockEvents: Event[] = [
       address: '北京市海淀区中关村大街1号中关村广场',
       lat: 39.9792,
       lng: 116.3092,
-      district: '海淀区'
+      district: '海淀区',
+      accuracy: 'precise'
     },
     ticket: {
       isFree: true
@@ -64,7 +66,8 @@ export const mockEvents: Event[] = [
       address: '北京市朝阳区酒仙桥路4号798艺术区',
       lat: 39.9845,
       lng: 116.4950,
-      district: '朝阳区'  
+      district: '朝阳区',
+      accuracy: 'precise'
     },
     ticket: {
       isFree: false,
@@ -88,7 +91,9 @@ export const mockEvents: Event[] = [
       address: '北京市顺义区温榆河公园',
       lat: 40.1011,
       lng: 116.6543,
-      district: '顺义区'
+      district: '顺义区',
+      accuracy: 'area',
+      note: '公园类活动可能存在集合点变化，出发前建议确认主办方说明。'
     },
     ticket: {
       isFree: false,
@@ -112,7 +117,8 @@ export const mockEvents: Event[] = [
       address: '北京市东城区南锣鼓巷108号',
       lat: 39.9403,
       lng: 116.4057,
-      district: '东城区'
+      district: '东城区',
+      accuracy: 'precise'
     },
     ticket: {
       isFree: true
@@ -134,7 +140,9 @@ export const mockEvents: Event[] = [
       address: '北京市海淀区奥林匹克公园篮球场',
       lat: 39.9928,
       lng: 116.3917,
-      district: '海淀区'
+      district: '海淀区',
+      accuracy: 'area',
+      note: '开放场地活动可能需要现场确认具体集合点。'
     },
     ticket: {
       isFree: true
