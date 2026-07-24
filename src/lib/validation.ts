@@ -5,7 +5,7 @@ export const eventCategories = ['coffee', 'music', 'market', 'party', 'exhibitio
 
 export const eventStatus = ['active', 'inactive', 'draft'] as const;
 export const locationAccuracies = ['precise', 'area', 'unverified'] as const;
-export const sourcePlatforms = ['xiaohongshu', 'manual', 'wechat', 'instagram', 'website', 'other'] as const;
+export const sourcePlatforms = ['xiaohongshu', 'manual', 'wechat', 'instagram', 'website', 'partner_api', 'csv', 'other'] as const;
 
 export type SourcePlatform = (typeof sourcePlatforms)[number];
 

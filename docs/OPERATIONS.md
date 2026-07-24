@@ -9,6 +9,7 @@ This is the working checklist for running the current iLocal MVP.
 - Activity management: `/dashboard/events`
 - New activity: `/dashboard/events/new`
 - Intake queue: `/dashboard/intake`
+- Activity automation: `/dashboard/automation`
 - CSV import: `/dashboard/import`
 - Tag management: `/dashboard/tags`
 - User management: `/dashboard/users`
@@ -51,6 +52,12 @@ Source provenance specifically requires:
 - `supabase/migrations/20260724002000_event_source_provenance.sql`
 
 It adds source platform, source URL, source title, cover source URL, source notes, and source verification metadata to formal events. Without this migration, candidate publishing still works only for old activity fields and the dashboard cannot save source tracking fields.
+
+Activity automation specifically requires:
+
+- `supabase/migrations/20260724003000_activity_update_automation.sql`
+
+It creates `event_update_sources` and `event_update_runs`, links automated runs back to `event_import_candidates`, expands accepted source platform values, and seeds initial Beijing sourcing rules. Without this migration, `/dashboard/automation` will show a setup warning and cannot queue runs.
 
 ## First Admin Setup
 
@@ -116,6 +123,61 @@ After that, use `/dashboard/users` to add moderators or additional admins, send 
 7. Click `发布活动` after validation and duplicate checks pass.
 8. Verify the activity appears in `/dashboard/events` and on the public Explore page.
 
+## Automated Activity Update Workflow
+
+The automation flow is intentionally staged so unverified social content never publishes directly.
+
+1. Open `/dashboard/automation`.
+2. Create or adjust a source:
+   - `platform`: where the source comes from, such as `xiaohongshu`, `wechat`, `website`, `partner_api`, or `csv`.
+   - `city`: current MVP target is `北京`.
+   - `query`: exact search terms or source rule, for example `北京 周末 音乐 演出 livehouse`.
+   - `category_hint`: the expected iLocal category.
+   - `cadence`: `manual` for early testing; switch to `daily` or `weekly` only after the adapter is stable.
+3. Click `创建运行记录` to queue a manual run.
+4. Deploy and invoke `supabase/functions/activity-updater` to process queued runs. The current function is a safe scaffold: it creates run status records and has a `collectEventsForSource` adapter slot, but does not scrape external platforms yet.
+5. A completed adapter writes normalized rows into `event_import_candidates`.
+6. Review every candidate in `/dashboard/intake`, verify location/source/cover image, then publish.
+
+The browser frontend must never contain social platform credentials or Supabase service role keys. Real collection should run in a Supabase Edge Function, scheduled worker, or another backend job that writes only to the candidate pool.
+
+### Edge Function Deployment Notes
+
+Function path:
+
+- `supabase/functions/activity-updater/index.ts`
+
+Required Supabase Edge Function secrets:
+
+- `SUPABASE_URL`
+- `SUPABASE_SECRET_KEYS` with a `default` secret key, or legacy `SUPABASE_SERVICE_ROLE_KEY`
+
+Supported request bodies:
+
+```json
+{ "run_id": "RUN_UUID" }
+```
+
+```json
+{ "source_id": "SOURCE_UUID", "dry_run": true }
+```
+
+```json
+{ "limit": 5 }
+```
+
+The last form drains up to five queued runs. It is the shape to call from a scheduled job once the first real adapter is added.
+
+### Automation Quality Rules
+
+- Keep social-source results in the candidate pool; never auto-publish them.
+- Preserve original source URL, source title, source notes, and cover source URL.
+- Store social-platform images only when rights and source policy are acceptable; otherwise use a linked cover URL, a venue image, or an operator-uploaded replacement.
+- Mark weak locations as `area` or `unverified`, and write the reason in `location_note`.
+- Prefer official venue/ticket sources over reposts when resolving time, price, and address.
+- Duplicate checking should run before inserting or publishing formal events. The first scaffold records `duplicate_count`; adapter refinement should fill it.
+- Start with `manual` cadence and Beijing-only queries. Move to daily scheduling after five to ten successful human-reviewed runs.
+
 ## Activity Quality Rules
 
 - Title should be short enough for mobile cards.
@@ -172,5 +234,6 @@ Before promoting a batch:
 
 - Add source confidence and editorial notes.
 - Add a lightweight submission form for partners.
-- Add scheduled sourcing jobs once the manual intake workflow is stable.
+- Wire the first real activity adapter into `activity-updater`, starting with Beijing 小红书-like social-source candidates.
+- Add scheduled sourcing jobs once the manual automation runs are stable.
 - Add service-role Edge Functions for admin-only Auth user creation, deletion, and forced session revocation.

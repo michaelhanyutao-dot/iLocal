@@ -55,6 +55,8 @@ export type Database = {
       }
       event_import_candidates: {
         Row: {
+          automation_run_id: string | null
+          automation_source_id: string | null
           created_at: string
           created_by: string | null
           id: string
@@ -73,6 +75,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          automation_run_id?: string | null
+          automation_source_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -91,6 +95,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          automation_run_id?: string | null
+          automation_source_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -110,6 +116,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "event_import_candidates_automation_run_id_fkey"
+            columns: ["automation_run_id"]
+            isOneToOne: false
+            referencedRelation: "event_update_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_import_candidates_automation_source_id_fkey"
+            columns: ["automation_source_id"]
+            isOneToOne: false
+            referencedRelation: "event_update_sources"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "event_import_candidates_imported_event_id_fkey"
             columns: ["imported_event_id"]
             isOneToOne: false
@@ -117,6 +137,119 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      event_update_runs: {
+        Row: {
+          candidate_count: number
+          created_at: string
+          created_by: string | null
+          discovered_count: number
+          duplicate_count: number
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          source_id: string | null
+          source_snapshot: Json
+          started_at: string | null
+          status: string
+          summary: Json
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          candidate_count?: number
+          created_at?: string
+          created_by?: string | null
+          discovered_count?: number
+          duplicate_count?: number
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          source_id?: string | null
+          source_snapshot?: Json
+          started_at?: string | null
+          status?: string
+          summary?: Json
+          trigger_type?: string
+          updated_at?: string
+        }
+        Update: {
+          candidate_count?: number
+          created_at?: string
+          created_by?: string | null
+          discovered_count?: number
+          duplicate_count?: number
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          source_id?: string | null
+          source_snapshot?: Json
+          started_at?: string | null
+          status?: string
+          summary?: Json
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_update_runs_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "event_update_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_update_sources: {
+        Row: {
+          cadence: string
+          category_hint: string | null
+          city: string
+          created_at: string
+          created_by: string | null
+          id: string
+          last_run_at: string | null
+          name: string
+          next_run_at: string | null
+          notes: string | null
+          platform: string
+          query: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          cadence?: string
+          category_hint?: string | null
+          city?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          last_run_at?: string | null
+          name: string
+          next_run_at?: string | null
+          notes?: string | null
+          platform?: string
+          query: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          cadence?: string
+          category_hint?: string | null
+          city?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          last_run_at?: string | null
+          name?: string
+          next_run_at?: string | null
+          notes?: string | null
+          platform?: string
+          query?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       event_user_actions: {
         Row: {

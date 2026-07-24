@@ -18,6 +18,7 @@ import Admin from "./pages/Admin";
 import AdminEvents from "./pages/AdminEvents";
 import AdminImport from "./pages/AdminImport";
 import AdminIntake from "./pages/AdminIntake";
+import AdminAutomation from "./pages/AdminAutomation";
 import AdminTags from "./pages/AdminTags";
 import AdminUsers from "./pages/AdminUsers";
 import NotFound from "./pages/NotFound";
@@ -118,6 +119,22 @@ const App = () => (
                 element={
                   <ProtectedRoute requireAdmin>
                     <AdminIntake />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/automation"
+                element={
+                  <ProtectedRoute requireAdmin>
+                    <AdminAutomation />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/automation"
+                element={
+                  <ProtectedRoute requireAdmin>
+                    <AdminAutomation />
                   </ProtectedRoute>
                 }
               />

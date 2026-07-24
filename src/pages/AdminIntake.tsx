@@ -1420,6 +1420,8 @@ const sourcePlatformLabels: Record<SourcePlatform, string> = {
   wechat: '微信/公众号',
   website: '官网/网页',
   instagram: 'Instagram',
+  partner_api: '合作方 API',
+  csv: 'CSV 批量',
   other: '其他来源',
 };
 

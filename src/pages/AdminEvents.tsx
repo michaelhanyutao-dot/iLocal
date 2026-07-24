@@ -171,6 +171,8 @@ const AdminEvents = () => {
     { value: 'wechat', label: '微信/公众号' },
     { value: 'website', label: '官网/网页' },
     { value: 'instagram', label: 'Instagram' },
+    { value: 'partner_api', label: '合作方 API' },
+    { value: 'csv', label: 'CSV 批量' },
     { value: 'other', label: '其他来源' },
   ];
 

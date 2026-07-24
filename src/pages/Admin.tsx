@@ -19,6 +19,8 @@ import {
   Edit,
   FileSpreadsheet,
   ClipboardList,
+  Bot,
+  RefreshCw,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -34,6 +36,8 @@ const Admin = () => {
     totalTags: 0,
     totalUsers: 0,
     pendingCandidates: 0,
+    automationSources: 0,
+    queuedAutomationRuns: 0,
   });
 
   const fetchStats = useCallback(async () => {
@@ -72,12 +76,34 @@ const Admin = () => {
         pendingCandidates = candidateCount || 0;
       }
 
+      let automationSources = 0;
+      const { count: sourceCount, error: sourceCountError } = await supabase
+        .from('event_update_sources')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'active');
+
+      if (!sourceCountError) {
+        automationSources = sourceCount || 0;
+      }
+
+      let queuedAutomationRuns = 0;
+      const { count: runCount, error: runCountError } = await supabase
+        .from('event_update_runs')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'queued');
+
+      if (!runCountError) {
+        queuedAutomationRuns = runCount || 0;
+      }
+
       setStats({
         totalEvents: totalEvents || 0,
         activeEvents: activeEvents || 0,
         totalTags: totalTags || 0,
         totalUsers,
         pendingCandidates: pendingCandidates || 0,
+        automationSources,
+        queuedAutomationRuns,
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -150,7 +176,7 @@ const Admin = () => {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 gap-6 mb-8 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+        <div className="grid grid-cols-1 gap-6 mb-8 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
           <Card className="bg-gradient-card border-border/50">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">总活动数</CardTitle>
@@ -215,6 +241,32 @@ const Admin = () => {
               </p>
             </CardContent>
           </Card>
+
+          <Card className="bg-gradient-card border-border/50">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">自动来源</CardTitle>
+              <Bot className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.automationSources}</div>
+              <p className="text-xs text-muted-foreground">
+                已启用来源
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-card border-border/50">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">排队运行</CardTitle>
+              <RefreshCw className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.queuedAutomationRuns}</div>
+              <p className="text-xs text-muted-foreground">
+                等待采集器
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
         {!isAdmin && !isModerator && (
@@ -264,6 +316,25 @@ const Admin = () => {
               <Button className="w-full" variant="outline">
                 <ClipboardList className="w-4 h-4 mr-2" />
                 审核线索
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-card border-border/50 hover:shadow-lg transition-shadow cursor-pointer"
+                onClick={() => navigate(`${adminBase}/automation`)}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bot className="w-5 h-5" />
+                自动化更新
+              </CardTitle>
+              <CardDescription>
+                管理活动来源、运行队列和后续采集流程
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button className="w-full" variant="outline">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                管理流程
               </Button>
             </CardContent>
           </Card>
