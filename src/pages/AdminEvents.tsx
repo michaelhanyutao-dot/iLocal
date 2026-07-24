@@ -112,6 +112,7 @@ const AdminEvents = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | Event['status']>('all');
   const [categoryFilter, setCategoryFilter] = useState<'all' | string>('all');
+  const [locationFilter, setLocationFilter] = useState<'all' | LocationAccuracy>('all');
   const [coverUploading, setCoverUploading] = useState(false);
   const [formData, setFormData] = useState(defaultEventFormData);
 
@@ -402,10 +403,11 @@ const AdminEvents = () => {
       ].some((value) => (value ?? '').toLowerCase().includes(normalizedSearch));
       const matchesStatus = statusFilter === 'all' || event.status === statusFilter;
       const matchesCategory = categoryFilter === 'all' || event.category === categoryFilter;
+      const matchesLocation = locationFilter === 'all' || event.location_accuracy === locationFilter;
 
-      return matchesSearch && matchesStatus && matchesCategory;
+      return matchesSearch && matchesStatus && matchesCategory && matchesLocation;
     });
-  }, [categoryFilter, events, searchQuery, statusFilter]);
+  }, [categoryFilter, events, locationFilter, searchQuery, statusFilter]);
 
   const eventStats = useMemo(() => {
     return events.reduce(
@@ -414,9 +416,10 @@ const AdminEvents = () => {
         if (event.status === 'active') accumulator.active += 1;
         if (event.status === 'draft') accumulator.draft += 1;
         if (event.status === 'inactive') accumulator.inactive += 1;
+        if (event.location_accuracy !== 'precise') accumulator.needsLocationReview += 1;
         return accumulator;
       },
-      { total: 0, active: 0, draft: 0, inactive: 0 },
+      { total: 0, active: 0, draft: 0, inactive: 0, needsLocationReview: 0 },
     );
   }, [events]);
 
@@ -496,9 +499,9 @@ const AdminEvents = () => {
               活动列表 ({filteredEvents.length}/{events.length})
             </CardTitle>
             <CardDescription>
-              上架 {eventStats.active} · 草稿 {eventStats.draft} · 下架 {eventStats.inactive}
+              上架 {eventStats.active} · 草稿 {eventStats.draft} · 下架 {eventStats.inactive} · 待位置核验 {eventStats.needsLocationReview}
             </CardDescription>
-            <div className="grid gap-3 pt-3 md:grid-cols-[minmax(220px,1fr)_180px_200px_auto]">
+            <div className="grid gap-3 pt-3 md:grid-cols-[minmax(220px,1fr)_160px_180px_180px_auto]">
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -532,12 +535,24 @@ const AdminEvents = () => {
                   ))}
                 </SelectContent>
               </Select>
+              <Select value={locationFilter} onValueChange={(value: 'all' | LocationAccuracy) => setLocationFilter(value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="位置核验" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部位置</SelectItem>
+                  <SelectItem value="precise">精确位置</SelectItem>
+                  <SelectItem value="area">区域估算</SelectItem>
+                  <SelectItem value="unverified">待核验</SelectItem>
+                </SelectContent>
+              </Select>
               <Button
                 variant="outline"
                 onClick={() => {
                   setSearchQuery('');
                   setStatusFilter('all');
                   setCategoryFilter('all');
+                  setLocationFilter('all');
                 }}
               >
                 重置
@@ -566,6 +581,7 @@ const AdminEvents = () => {
                     setSearchQuery('');
                     setStatusFilter('all');
                     setCategoryFilter('all');
+                    setLocationFilter('all');
                   }}
                 >
                   清除筛选
