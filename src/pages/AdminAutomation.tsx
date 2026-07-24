@@ -124,6 +124,7 @@ const AdminAutomation = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [queueing, setQueueing] = useState(false);
+  const [processingAction, setProcessingAction] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const selectedSource = useMemo(
@@ -308,6 +309,85 @@ const AdminAutomation = () => {
 
     setSources((current) => current.map((item) => (item.id === data.id ? data : item)));
   };
+
+  const invokeUpdater = async (body: Record<string, unknown>, successMessage: string) => {
+    setProcessingAction(JSON.stringify(body));
+    const { data, error: invokeError } = await supabase.functions.invoke('activity-updater', {
+      body,
+    });
+    setProcessingAction(null);
+
+    if (invokeError) {
+      toast({
+        title: '运行器调用失败',
+        description: `${invokeError.message}。请确认 activity-updater Edge Function 已部署，并配置了 Supabase secret/service role key。`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    await fetchAutomation();
+    const processed = typeof data === 'object' && data && 'processed' in data ? String(data.processed) : '';
+    toast({
+      title: successMessage,
+      description: processed ? `处理数量：${processed}` : '运行状态已刷新。',
+    });
+  };
+
+  const handleRunSelectedSource = async () => {
+    if (!selectedSource) {
+      toast({
+        title: '请选择一个来源',
+        description: '没有来源时无法立即运行。',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    await invokeUpdater(
+      { source_id: selectedSource.id, dry_run: false },
+      '已调用当前来源运行器',
+    );
+  };
+
+  const handleProcessQueue = async () => {
+    await invokeUpdater({ limit: 5 }, '已处理排队运行');
+  };
+
+  const handleProcessRun = async (run: UpdateRun) => {
+    await invokeUpdater({ run_id: run.id }, '已处理该运行记录');
+  };
+
+  const handleCancelRun = async (run: UpdateRun) => {
+    const { data, error: updateError } = await supabase
+      .from('event_update_runs')
+      .update({
+        status: 'cancelled',
+        finished_at: new Date().toISOString(),
+        error_message: '运营后台手动取消。',
+      })
+      .eq('id', run.id)
+      .eq('status', 'queued')
+      .select('*')
+      .single();
+
+    if (updateError) {
+      toast({
+        title: '取消失败',
+        description: updateError.message,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setRuns((current) => current.map((item) => (item.id === data.id ? data : item)));
+    toast({
+      title: '已取消排队运行',
+      description: '该任务不会被自动运行器处理。',
+    });
+  };
+
+  const isProcessing = (body: Record<string, unknown>) => processingAction === JSON.stringify(body);
 
   return (
     <div className="min-h-screen bg-gradient-background">
@@ -595,6 +675,24 @@ const AdminAutomation = () => {
                   <PlayCircle className="w-4 h-4 mr-2" />
                   {queueing ? '排队中...' : '创建运行记录'}
                 </Button>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <Button
+                    variant="secondary"
+                    onClick={handleRunSelectedSource}
+                    disabled={!selectedSource || Boolean(processingAction)}
+                  >
+                    <Bot className="w-4 h-4 mr-2" />
+                    {isProcessing({ source_id: selectedSource?.id, dry_run: false }) ? '运行中...' : '立即运行来源'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleProcessQueue}
+                    disabled={stats.queuedRuns === 0 || Boolean(processingAction)}
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    {isProcessing({ limit: 5 }) ? '处理中...' : '处理排队任务'}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -619,7 +717,8 @@ const AdminAutomation = () => {
                     <th className="py-3 pr-4 font-medium">候选</th>
                     <th className="py-3 pr-4 font-medium">重复</th>
                     <th className="py-3 pr-4 font-medium">创建时间</th>
-                    <th className="py-3 font-medium">错误</th>
+                    <th className="py-3 pr-4 font-medium">错误</th>
+                    <th className="py-3 font-medium">操作</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -641,11 +740,50 @@ const AdminAutomation = () => {
                       <td className="max-w-[240px] py-3 text-muted-foreground">
                         {run.error_message || '-'}
                       </td>
+                      <td className="py-3">
+                        <div className="flex flex-wrap gap-2">
+                          {run.status === 'queued' && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleProcessRun(run)}
+                                disabled={Boolean(processingAction)}
+                              >
+                                <PlayCircle className="w-4 h-4 mr-2" />
+                                {isProcessing({ run_id: run.id }) ? '处理中' : '处理'}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleCancelRun(run)}
+                                disabled={Boolean(processingAction)}
+                              >
+                                取消
+                              </Button>
+                            </>
+                          )}
+                          {run.status === 'failed' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleProcessRun(run)}
+                              disabled={Boolean(processingAction)}
+                            >
+                              <RefreshCw className="w-4 h-4 mr-2" />
+                              {isProcessing({ run_id: run.id }) ? '重试中' : '重试'}
+                            </Button>
+                          )}
+                          {run.status !== 'queued' && run.status !== 'failed' && (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   ))}
                   {!loading && runs.length === 0 && (
                     <tr>
-                      <td className="py-6 text-muted-foreground" colSpan={8}>
+                      <td className="py-6 text-muted-foreground" colSpan={9}>
                         还没有运行记录。先创建一个运行记录，后续接入采集器即可自动填充候选池。
                       </td>
                     </tr>

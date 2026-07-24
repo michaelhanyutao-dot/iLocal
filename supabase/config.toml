@@ -1,1 +1,4 @@
 project_id = "opjiacaqzljurmyknrlj"
+
+[functions.activity-updater]
+verify_jwt = false

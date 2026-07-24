@@ -135,11 +135,16 @@ The automation flow is intentionally staged so unverified social content never p
    - `category_hint`: the expected iLocal category.
    - `cadence`: `manual` for early testing; switch to `daily` or `weekly` only after the adapter is stable.
 3. Click `创建运行记录` to queue a manual run.
-4. Deploy and invoke `supabase/functions/activity-updater` to process queued runs. The current function is a safe scaffold: it creates run status records and has a `collectEventsForSource` adapter slot, but does not scrape external platforms yet.
+4. Deploy and invoke `supabase/functions/activity-updater` to process queued runs. `/dashboard/automation` can call it directly with `立即运行来源`, `处理排队任务`, or an individual row's `处理` button.
 5. A completed adapter writes normalized rows into `event_import_candidates`.
 6. Review every candidate in `/dashboard/intake`, verify location/source/cover image, then publish.
 
 The browser frontend must never contain social platform credentials or Supabase service role keys. Real collection should run in a Supabase Edge Function, scheduled worker, or another backend job that writes only to the candidate pool.
+
+Current adapters:
+
+- `website`: if the source query contains a public URL, `activity-updater` fetches the page and extracts JSON-LD `Event` data into candidate activities.
+- `xiaohongshu`, `wechat`, `instagram`, `partner_api`, `csv`, `manual`, `other`: currently tracked as source configuration and run records. Add adapters before expecting automatic candidates from these platforms.
 
 ### Edge Function Deployment Notes
 
@@ -147,10 +152,15 @@ Function path:
 
 - `supabase/functions/activity-updater/index.ts`
 
+Function config:
+
+- `supabase/config.toml` sets `[functions.activity-updater] verify_jwt = false` so Supabase Cron can call it with `x-ilocal-cron-secret`. The function still performs its own authorization: dashboard calls need admin/moderator JWT, scheduled calls need the cron secret.
+
 Required Supabase Edge Function secrets:
 
 - `SUPABASE_URL`
 - `SUPABASE_SECRET_KEYS` with a `default` secret key, or legacy `SUPABASE_SERVICE_ROLE_KEY`
+- `ACTIVITY_UPDATER_CRON_SECRET` for scheduled calls
 
 Supported request bodies:
 
@@ -167,6 +177,20 @@ Supported request bodies:
 ```
 
 The last form drains up to five queued runs. It is the shape to call from a scheduled job once the first real adapter is added.
+
+Manual dashboard calls require the logged-in user to have `admin` or `moderator`. Scheduled calls must send `x-ilocal-cron-secret` matching `ACTIVITY_UPDATER_CRON_SECRET`.
+
+### Scheduled Run Template
+
+Use this SQL template only after the Edge Function is deployed and tested manually:
+
+- `supabase/sql/activity_updater_schedule_template.sql`
+
+Before running it:
+
+1. Replace `PROJECT_REF` with the Supabase project ref.
+2. Replace `CHANGE_THIS_TO_A_LONG_RANDOM_SECRET` with the same value stored as the Edge Function secret `ACTIVITY_UPDATER_CRON_SECRET`.
+3. Keep the first schedule conservative, for example once per day at off-peak time.
 
 ### Automation Quality Rules
 
